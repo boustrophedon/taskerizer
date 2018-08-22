@@ -1,0 +1,5 @@
+This is a prototype for Taskerizer, an app to help you pick what to do when faced with too many tasks.
+
+This readme focuses mostly on motivation - see the help text either from the command itself or in `src/commands.rs`, and `ideas.txt` for more on the actual usage of Taskerizer.
+
+One of my biggest problems is choosing something to start working on, or literally just the act of starting to do something. I can list the things I need to do in a todo app, but then I just let them sit there and gather. I read in an article that the concept behind SuperMemo is to flip the relationship between computers and humans with regards to memory: instead of having the computer remember facts for you, supermemo programs the computer to helps you recall the facts yourself. Similarly, a todo app makes the computer remember the tasks you have to do, whereas Taskerizer ideally will help you choose which task to do. Of course, supermemo uses a fancy spaced-repetition algorithm to achieve this. Taskerizer just uses a randomizer with priority weights and some optional skinner box mechanics.

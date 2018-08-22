@@ -1,0 +1,183 @@
+add task:
+	parameters:
+		- type
+			- task or reward, maybe for prototype just have a flag that marks it as a reward but in general you could have multiple different types of tasks with different probabilities to choose. for now choosing a reward with a hardcoded percentage 
+		- name
+		- priority
+			- lowest 1 highest infty (well, max usize i guess)
+	
+list tasks:
+	- prints a list of tasks
+		- I guess just two lists, one of tasks and one of rewards
+
+show current task:
+	- print current active task
+
+complete task:
+	- removes current task from task list
+		- if task is reward keep by default?
+	- maybe keep a log of completed tasks by day or something?
+
+	parameters:
+		- maybe have a --keep parameter
+		- maybe use it like `tkz complete [--keep] "notes about completed task"` i.e. anything at the end is treated as a string containing notes about the task, like a git commit message
+
+skip task:
+	- returns current task to task list
+
+	parameters:
+		- maybe optional note why it was skipped
+		- maybe a message if the task gets skipped a lot
+
+---
+
+more features:
+recurring tasks like todoist
+arbitrary categories
+randomized timer with notification
+
+--- 
+
+no select task - if you finish that specific task while it isn't current, just skip it when it gets randomly selected
+	- eventually i guess if there are a bunch of low priority tasks it can get cluttered so maybe delete would be useful
+	- list indices on list command, use those to delete
+
+---
+
+I changed the terminology from reward to break because it sounds nicer but left reward as the actual variable in the code since break is a keyword
+
+---
+testing ideas:
+
+define a trait for above database operations, then either put boxed or impl trait when used in structs/params for testing with mocks
+
+for choosing random task, it should be easier, just put the actual randomly generated value as a parameter
+
+---
+
+sync ideas:
+
+eventually if i make a web ver. and do sync, how do you do it?
+
+"unsynced operations" table? in the case we are offline or manually sync, otherwise just do it immediately if we have connection.
+
+fancy CDRT stuff?
+
+add a task:
+	- can always merge adds
+	- if server doesn't receive acknowledgement but updates were delivered we can get duplicated adds?
+		- if we check guids that isn't a problem
+delete a task:
+	- need to use ID, so would need to add global ids to tasks
+	- if task was created and then completed while offline, or before the other party had to sync, then i guess we don't even need to send that in the first place but also it's not an error
+		- if we put it in an unsynced operations table we can check if the corresponding add is also unsynced
+		- probably unnecessary
+
+---
+
+more sync ideas:
+
+saw in an HN comment, add an operation ID to prevent duplicate operations. if you see the operation id twice then you know the client didn't see an ack.
+
+---
+
+database:
+ideally, all database operations should be self-contained so that you never need to handle db indices outside the actual db operation code
+
+	!!! need to do "pragma foreign_keys = ON;" !!!
+
+	tasks table:
+		id, task, priority, category
+
+		"create table tasks (
+			id INTEGER PRIMARY KEY,
+			task TEXT NOT NULL,
+			priority INTEGER NOT NULL,
+			category INTEGER NOT NULL
+		);"
+
+	current task table:
+		foreignkey to tasks table id?
+		should always have exactly 0 or 1 elements
+
+		"create table current (
+			id INTEGER PRIMARY KEY check (id = 1),
+			task_id INTEGER NOT NULL,
+			foreign key (task_id) references tasks(id),
+		);"
+
+	completed tasks table:
+		id, task, category, date completed
+
+		"create table completed (
+			id INTEGER PRIMARY KEY,
+			task TEXT NOT NULL,
+			category INTEGER NOT NULL,
+			date_completed TEXT NOT NULL
+		);"
+	
+	metadata table:
+		version number, creation date
+		check if version number is equal to cargo version number
+
+		"create table metadata {
+			id INTEGER PRIMARY KEY check (id = 1),
+			version TEXT NOT NULL,
+			date_created TEXT NOT NULL
+		);"
+
+	- current task table probably saves space compared to having an extra "current" bool column and makes it easier to preserve the "only one current active task" invariant
+	- completed task table also saves space and probably helps prevent bugs accidentally selecting completed tasks when selecting current from tasks table
+
+creation operations:
+- open
+	probably just open or create
+
+	for create:
+		- sqlite: foreign key pragma
+		- create tables
+
+operations for each action:
+- add
+	- insert to database
+- list
+	I guess for now I can just return a tuple of vecs or something
+	- get all tasks, sorted by category and then priority
+	- maybe query each separately?
+		- i.e.
+		"select [...] from tasks where category=task order by priority"
+		"select [...] from tasks where category=reward order by priority"
+		
+		- probably not necessary, just append to different vecs inside query_map
+- show current
+	- can do in one query:
+	"select [...] from tasks where id =
+		( select taskid from current where id = 1 )
+	- if 0 results no current task set, but i don't think it's an error
+
+- complete task
+	- get current task
+	- add current task to completed
+	- remove current task from tasks table
+		- same query as show current but delete instead of select
+		- we need to return the task as well though, so get select first
+	- get all tasks as in list operation
+	- (not db operation) choose new task
+	- set current task: "replace into current (id, task_id) values (1, :task_id);"
+
+- skip task
+	- same as complete task but without removal operation
+
+so, operations needed:
+
+tasks_add(Task) -> Result<(), Error)
+tasks_list() -> Result<(Vec<Task>, Vec<Task>), Error>
+tasks_current() -> Result<Task, Error>
+tasks_remove_current() -> Result<Task, Error>
+current_set(Task)
+completed_add(Task) -> Result<(), Error> 
+tasks_skip
+
+---
+
+drop impl on database struct to close?

@@ -1,0 +1,10 @@
+implement database operations:
+	- decide which operation to implement next
+	- write test for that operation
+	- implement operation
+	- refactor, iterate
+
+decide how to test actual dispatched actions:
+	- it might be enough to not test those if they're thin enough wrappers around the db ops
+	- otherwise test by reading input/output, there are crates for this i think
+
