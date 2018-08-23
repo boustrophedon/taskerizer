@@ -5,11 +5,14 @@ use chrono::Utc;
 use task::Task;
 use db::{SqliteBackend, DBBackend};
 
+// utility functions
+
 fn open_test_db() -> (SqliteBackend, TempDir) {
     let test_dir = tempdir().expect("temporary directory could not be created");
-
-    // expect is easier than getting the err out of the result and asserting it
-    let db = SqliteBackend::open(&test_dir).expect("creating database failed");
+ 
+    let res = SqliteBackend::open(&test_dir);
+    assert!(res.is_ok(), "Error opening db: {}", res.unwrap_err());
+    let db = res.unwrap();
 
     (db, test_dir)
 }
@@ -56,6 +59,7 @@ fn test_db_add() {
         reward: true,
     };
 
-    db.add(task).expect("adding task failed");
-    db.add(reward).expect("adding reward failed");
+
+    assert!(db.add(&task).is_ok(), "Adding task failed: {:?}");
+    assert!(db.add(&reward).is_ok(), "Adding reward failed: {:?}");
 }
