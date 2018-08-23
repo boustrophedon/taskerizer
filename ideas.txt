@@ -170,7 +170,7 @@ operations for each action:
 
 so, operations needed:
 
-tasks_add(Task) -> Result<(), Error)
+tasks_add(Task) -> Result<(), Error>
 tasks_list() -> Result<(Vec<Task>, Vec<Task>), Error>
 tasks_current() -> Result<Task, Error>
 tasks_remove_current() -> Result<Task, Error>
@@ -181,3 +181,12 @@ tasks_skip
 ---
 
 drop impl on database struct to close?
+
+---
+
+I got caught up in trying to figure out the best way to do categories and not expose primary keys/ids to the user api (do you make a guid for the category, or do you just call the category string/text a "natural key" and put a UNIQUE on the name column and do queries on the text, etc) so since this is a "prototype" i'm just going to make it a bool.
+
+I think the right way is probably to have a table that's |rowid|category|category_priority| and have a foreign key in the task table pointing to the category
+
+then when you populate a task struct you join on the category_id and put in an actual category struct
+similarly when you insert a task it only has the category name, and I guess the insert should fail if the category doesn't exist because of the foreign key check

@@ -1,9 +1,12 @@
 use failure::Error;
 use db::{SqliteBackend, DBMetadata};
 
+use task::Task;
+
 pub trait DBBackend {
     type DBError;
     fn metadata(&self) -> Result<DBMetadata, Self::DBError>;
+    fn add(&self, task: Task) -> Result<(), Self::DBError>;
     fn close(self) -> Result<(), Self::DBError>;
 }
 
@@ -26,6 +29,10 @@ impl DBBackend for SqliteBackend {
                 date_created: date_created,
             }
         )
+    }
+
+    fn add(&self, task: Task) -> Result<(), Error> {
+        Ok(())
     }
 
     fn close(self) -> Result<(), Error> {

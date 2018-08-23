@@ -11,8 +11,8 @@ extern crate proptest;
 #[cfg(test)]
 extern crate tempfile;
 
-
 pub mod commands;
 pub mod config;
+pub mod task;
 
 pub(crate) mod db;

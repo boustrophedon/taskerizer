@@ -1,3 +1,7 @@
+current todo:
+- write test for list
+- write test to check list returns added items
+
 implement database operations:
 	- decide which operation to implement next
 	- write test for that operation
