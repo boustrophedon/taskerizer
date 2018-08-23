@@ -1,3 +1,5 @@
+use proptest::prelude::*;
+
 use tempfile::{tempdir, TempDir};
 
 use chrono::Utc;
@@ -17,6 +19,21 @@ fn open_test_db() -> (SqliteBackend, TempDir) {
     (db, test_dir)
 }
 
+// proptest gen functions
+
+prop_compose! {
+    fn arb_task()(task in any::<String>(),
+                  priority in any::<u32>(),
+                  reward in any::<bool>()) -> Task {
+        Task {
+            task: task,
+            priority: priority,
+            reward: reward,
+        }
+    }
+}
+
+// tests
 
 #[test]
 fn test_db_open() {
@@ -60,6 +77,17 @@ fn test_db_add() {
     };
 
 
-    assert!(db.add(&task).is_ok(), "Adding task failed: {:?}");
-    assert!(db.add(&reward).is_ok(), "Adding reward failed: {:?}");
+    assert!(db.add(&task).is_ok(), "Adding task failed: {:?}", task);
+    assert!(db.add(&reward).is_ok(), "Adding reward failed: {:?}", reward);
+}
+
+proptest! {
+    #[test]
+    fn test_db_add_prop(task1 in arb_task(),
+                   task2 in arb_task()) {
+        let (db, dir) = open_test_db();
+
+        prop_assert!(db.add(&task1).is_ok(), "Adding task failed. task1: {:?}", task1);
+        prop_assert!(db.add(&task2).is_ok(), "Adding task failed. task2: {:?}", task2);
+    }
 }
