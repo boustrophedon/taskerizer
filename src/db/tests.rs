@@ -76,9 +76,9 @@ fn test_db_add() {
         reward: true,
     };
 
-    let res = db.add(&task);
+    let res = db.add_task(&task);
     assert!(res.is_ok(), "Adding task failed: {:?}, err: {}", task, res.unwrap_err());
-    let res = db.add(&reward);
+    let res = db.add_task(&reward);
     assert!(res.is_ok(), "Adding reward failed: {:?}, err: {}", reward, res.unwrap_err());
 }
 
@@ -88,7 +88,7 @@ proptest! {
                    task2 in arb_task()) {
         let (db, dir) = open_test_db();
 
-        prop_assert!(db.add(&task1).is_ok(), "Adding task failed. task1: {:?}", task1);
-        prop_assert!(db.add(&task2).is_ok(), "Adding task failed. task2: {:?}", task2);
+        prop_assert!(db.add_task(&task1).is_ok(), "Adding task failed. task1: {:?}", task1);
+        prop_assert!(db.add_task(&task2).is_ok(), "Adding task failed. task2: {:?}", task2);
     }
 }

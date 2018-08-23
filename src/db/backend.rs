@@ -6,7 +6,7 @@ use task::Task;
 pub trait DBBackend {
     type DBError;
     fn metadata(&self) -> Result<DBMetadata, Self::DBError>;
-    fn add(&self, task: &Task) -> Result<(), Self::DBError>;
+    fn add_task(&self, task: &Task) -> Result<(), Self::DBError>;
     fn close(self) -> Result<(), Self::DBError>;
 }
 
@@ -31,7 +31,7 @@ impl DBBackend for SqliteBackend {
         )
     }
 
-    fn add(&self, task: &Task) -> Result<(), Error> {
+    fn add_task(&self, task: &Task) -> Result<(), Error> {
         Ok(())
     }
 
