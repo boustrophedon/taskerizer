@@ -1,34 +1,36 @@
-use tempfile::tempdir;
+use tempfile::{tempdir, TempDir};
 
 use chrono::Utc;
 
 use task::Task;
 use db::{SqliteBackend, DBBackend};
 
-// TODO set up some sort of harness creating the tempdir and database
-
-#[test]
-fn test_db_open() {
+fn open_test_db() -> (SqliteBackend, TempDir) {
     let test_dir = tempdir().expect("temporary directory could not be created");
 
     // expect is easier than getting the err out of the result and asserting it
-    SqliteBackend::open(test_dir).expect("creating database failed");
+    let db = SqliteBackend::open(&test_dir).expect("creating database failed");
+
+    (db, test_dir)
+}
+
+
+#[test]
+fn test_db_open() {
+    open_test_db();
 }
 
 #[test]
 fn test_db_metadata() {
-    let test_dir = tempdir().expect("temporary directory could not be created");
-
-    // record time and create database
     let before_creation = Utc::now();
-    let db = SqliteBackend::open(&test_dir).expect("creating database failed");
+    let (db, dir) = open_test_db();
 
     // close connection and record time
     db.close().expect("closing db connection failed");
     let after_creation = Utc::now();
 
     // open again and read metadata
-    let db = SqliteBackend::open(&test_dir).expect("opening database failed");
+    let db = SqliteBackend::open(&dir).expect("opening database failed");
     let metadata = db.metadata().expect("getting db metadata failed");
 
     let ver = env!("CARGO_PKG_VERSION");
@@ -40,8 +42,7 @@ fn test_db_metadata() {
 
 #[test]
 fn test_db_add() {
-    let test_dir = tempdir().expect("temporary directory could not be created");
-    let db = SqliteBackend::open(&test_dir).expect("creating database failed");
+    let (db, dir) = open_test_db();
 
     let task = Task {
         task: "test task please ignore".to_string(),
