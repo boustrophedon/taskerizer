@@ -76,9 +76,10 @@ fn test_db_add() {
         reward: true,
     };
 
-
-    assert!(db.add(&task).is_ok(), "Adding task failed: {:?}", task);
-    assert!(db.add(&reward).is_ok(), "Adding reward failed: {:?}", reward);
+    let res = db.add(&task);
+    assert!(res.is_ok(), "Adding task failed: {:?}, err: {}", task, res.unwrap_err());
+    let res = db.add(&reward);
+    assert!(res.is_ok(), "Adding reward failed: {:?}, err: {}", reward, res.unwrap_err());
 }
 
 proptest! {
