@@ -5,8 +5,12 @@ use task::Task;
 
 pub trait DBBackend {
     type DBError;
+    /// Get metadata about database
     fn metadata(&self) -> Result<DBMetadata, Self::DBError>;
+    /// Add task to database
     fn add_task(&self, task: &Task) -> Result<(), Self::DBError>;
+    /// Close the database. This is not really required due to the implementation of Drop for the
+    /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
     fn close(self) -> Result<(), Self::DBError>;
 }
 
