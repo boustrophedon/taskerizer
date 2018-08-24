@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use failure::Error;
 use rusqlite::Connection;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DBMetadata {
     pub version: String, // TODO use semver crate so we can compare minor patch versions etc.
     pub date_created: DateTime<Utc>,

@@ -43,7 +43,7 @@ impl SqliteBackend {
     fn create_tables(&self) -> Result<(), Error> {
         // self.enable_foreign_keys_pragma()?;
         self.create_metadata_table()?;
-        // self.create_tasks_table()?;
+        self.create_tasks_table()?;
         // self.create_current_table()?;
         // self.create_completed_table()?;
         Ok(())
@@ -71,6 +71,22 @@ impl SqliteBackend {
             )",
             &[&version, &date_created]
         ).map_err(|e| format_err!("Could not insert metadata into database: {}", e))?;
+
+        Ok(())
+    }
+
+    fn create_tasks_table(&self) -> Result<(), Error> {
+        let conn = &self.connection;
+
+        conn.execute(
+            "CREATE TABLE tasks (
+                id INTEGER PRIMARY KEY,
+                task TEXT NOT NULL,
+                priority INTEGER NOT NULL,
+                category INTEGER NOT NULL
+            );",
+            &[]
+        ).map_err(|e| format_err!("Could not create tasks table: {}", e))?;
 
         Ok(())
     }

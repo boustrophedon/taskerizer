@@ -190,3 +190,7 @@ I think the right way is probably to have a table that's |rowid|category|categor
 
 then when you populate a task struct you join on the category_id and put in an actual category struct
 similarly when you insert a task it only has the category name, and I guess the insert should fail if the category doesn't exist because of the foreign key check
+
+--- 
+
+property testing idea, I could make an arb_db() that just calls the create test db utility function, and then compose with other ops to get like "arb_db_with_tasks()" maybe
