@@ -32,10 +32,6 @@ impl SqliteBackend {
         }
         Ok(db)
     }
-
-    pub fn open_in_memory() -> Result<SqliteBackend, Error> {
-        Err(err_msg("not implemented"))
-    }
 }
 
 // Create table impls
