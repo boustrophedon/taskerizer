@@ -67,7 +67,14 @@ impl DBBackend for SqliteBackend {
     fn get_all_tasks(&self) -> Result<Vec<Task>, Self::DBError> {
        let mut tasks = Vec::new();
 
-       let mut stmt = self.connection.prepare_cached("SELECT task, priority, category FROM tasks")
+       let mut stmt = self.connection.prepare_cached(
+           "SELECT task, priority, category
+           FROM tasks
+           ORDER BY
+            category DESC,
+            priority DESC,
+            task ASC
+           ")
            .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
        let rows = stmt.query_map(&[], |row| {
                Task {
