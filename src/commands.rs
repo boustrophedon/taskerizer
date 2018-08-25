@@ -29,27 +29,28 @@ impl TKZArgs {
 #[derive(StructOpt, Debug)]
 pub enum TKZCmd {
     #[structopt(name = "add")]
-    /// Add a task to the task list
+    /// Add a task to the task list.
     Add(Add),
 
-    #[structopt(name = "change-prob")]
-    /// Change the probability of a break being selected
-    ChangeProb(ChangeProb),
+    #[structopt(name = "break")]
+    /// Skip the current task and choose a break instead, or, if the `-p` flag is present, change
+    /// the probability of a break being selected.
+    Break(Break),
 
     #[structopt(name = "list")]
-    /// List all tasks
+    /// List all tasks.
     List,
 
     #[structopt(name = "current")]
-    /// Display the current task
+    /// Display the current task.
     Current(Current),
 
     #[structopt(name = "complete")]
-    /// Mark the current task as completed
+    /// Mark the current task as completed.
     Complete,
 
     #[structopt(name = "skip")]
-    /// Skip the current task, choosing a new one at random
+    /// Skip the current task, choosing a new one at random.
     Skip(Skip),
 }
 
@@ -74,15 +75,15 @@ pub struct Add {
 
 
 #[derive(StructOpt, Debug)]
-pub struct ChangeProb {
+pub struct Break {
     /// The probability as a decimal to select a task from break. Must be less than 1.0.
-    #[structopt(parse(try_from_str = "parse_prob"))]
-    pub p: f32,
+    #[structopt(short = "p", long = "probability", parse(try_from_str = "parse_prob"))]
+    pub p: Option<f32>,
 }
 
 /// Parse a float representing a probability from a string for the change-prob command
 fn parse_prob(arg: &str) -> Result<f32, Error> {
-    let p: f32 = arg.parse()?;
+    let p: f32 = arg.parse().map_err(|e| format_err!("unable to parse \"{}\": {}", arg, e))?;
     if p >= 1.0 {
         return Err(err_msg("probability must be less than 1"));
     }
