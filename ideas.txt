@@ -194,3 +194,15 @@ similarly when you insert a task it only has the category name, and I guess the 
 --- 
 
 property testing idea, I could make an arb_db() that just calls the create test db utility function, and then compose with other ops to get like "arb_db_with_tasks()" maybe
+
+---
+
+we can view the main function in a cli to essentially be a render function which renders by printing.
+
+we could i guess make it more complicated and have render functions for each of the commands or something?
+
+cli control flow is input (structopt) -> command (dispatch, business logic) -> output (display result of dispatch)
+
+so really we could have different renders for each of the outputs of the commands
+
+but really they're all going to output the same type (a list of strings to print out, a widget tree, whatever ncurses does, or whatever)

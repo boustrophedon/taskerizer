@@ -5,7 +5,7 @@ fn main() {
     let args = commands::TKZArgs::get_args();
     let cmd = match args.cmd {
         Some(cmd) => cmd,
-        None => commands::TKZCmd::List,
+        None => commands::TKZCmd::Current(commands::Current{top: false}),
     };
 
     println!("{:?}", cmd);

@@ -1,6 +1,8 @@
 current todo:
-- write test for list
-- write test to check list returns added items
+- change main to simply print out list of strings returned by dispatch (i.e. it's a render function which just renders a list of strings)
+- write test for dispatch on add and list
+- change command.dispatch to return a list of strings
+	- this makes command.dispatch testable
 
 implement database operations:
 	- decide which operation to implement next
