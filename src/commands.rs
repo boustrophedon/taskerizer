@@ -55,8 +55,8 @@ pub enum TKZCmd {
 }
 
 impl TKZCmd {
-    pub fn dispatch(&self, config: &Config) -> Result<(), Error> {
-        Ok(())
+    pub fn dispatch(&self, config: &Config) -> Result<Vec<String>, Error> {
+        Ok(Vec::new())
     }
 }
 
