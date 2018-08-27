@@ -1,5 +1,5 @@
 use failure::{Error, err_msg};
-use ::config::Config;
+use config::Config;
 
 use structopt::StructOpt;
 
