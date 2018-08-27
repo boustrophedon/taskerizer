@@ -70,7 +70,7 @@ fn test_db_metadata() {
 
 #[test]
 fn test_db_add() {
-    let (db, dir) = open_test_db();
+    let (db, _dir) = open_test_db();
 
     let task = Task {
         task: "test task please ignore".to_string(),
@@ -94,7 +94,7 @@ proptest! {
     #[test]
     fn test_db_add_arb(task1 in arb_task(),
                    task2 in arb_task()) {
-        let (db, dir) = open_test_db();
+        let (db, _dir) = open_test_db();
 
         prop_assert!(db.add_task(&task1).is_ok(), "Adding task failed. task1: {:?}", task1);
         prop_assert!(db.add_task(&task2).is_ok(), "Adding task failed. task2: {:?}", task2);
@@ -103,7 +103,7 @@ proptest! {
 
 #[test]
 fn test_db_list_empty() {
-    let (db, dir) = open_test_db();
+    let (db, _dir) = open_test_db();
 
     // get nothing from db
     let res = db.get_all_tasks();
@@ -116,7 +116,7 @@ fn test_db_list_empty() {
 
 #[test]
 fn test_db_list_added_manually() {
-    let (db, dir) = open_test_db();
+    let (db, _dir) = open_test_db();
 
     // manually make a list of tasks
 
@@ -169,7 +169,7 @@ fn test_db_list_added_manually() {
 proptest! {
     #[test]
     fn test_db_list_arb(tasks in arb_task_list()) {
-        let (db, dir) = open_test_db();
+        let (db, _dir) = open_test_db();
 
         // add all tasks to db
         for task in &tasks {
