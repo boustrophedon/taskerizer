@@ -102,7 +102,20 @@ proptest! {
 }
 
 #[test]
-fn test_db_list() {
+fn test_db_list_empty() {
+    let (db, dir) = open_test_db();
+
+    // get nothing from db
+    let res = db.get_all_tasks();
+    assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
+    let db_tasks = res.unwrap();
+
+    // check nothing was returned
+    assert_eq!(db_tasks.len(), 0);
+}
+
+#[test]
+fn test_db_list_added_manually() {
     let (db, dir) = open_test_db();
 
     // manually make a list of tasks

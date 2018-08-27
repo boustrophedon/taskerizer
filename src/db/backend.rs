@@ -65,32 +65,32 @@ impl DBBackend for SqliteBackend {
     }
 
     fn get_all_tasks(&self) -> Result<Vec<Task>, Self::DBError> {
-       let mut tasks = Vec::new();
+        let mut tasks = Vec::new();
 
-       let mut stmt = self.connection.prepare_cached(
-           "SELECT task, priority, category
-           FROM tasks
-           ORDER BY
-            category DESC,
-            priority DESC,
-            task ASC
-           ")
-           .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
-       let rows = stmt.query_map(&[], |row| {
-               Task {
-                   task: row.get(0),
-                   priority: row.get(1),
-                   reward: row.get(2)
-               }
-            })
-           .map_err(|e| format_err!("Error executing task list query: {}", e))?;
+        let mut stmt = self.connection.prepare_cached(
+            "SELECT task, priority, category
+            FROM tasks
+            ORDER BY
+             category DESC,
+             priority DESC,
+             task ASC
+            ")
+            .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
+        let rows = stmt.query_map(&[], |row| {
+                Task {
+                    task: row.get(0),
+                    priority: row.get(1),
+                    reward: row.get(2)
+                }
+             })
+            .map_err(|e| format_err!("Error executing task list query: {}", e))?;
 
-       for task_res in rows {
-           let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-           tasks.push(task);
-       }
+        for task_res in rows {
+            let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            tasks.push(task);
+        }
 
-       Ok(tasks)
+        Ok(tasks)
     }
 
     fn close(self) -> Result<(), Error> {
