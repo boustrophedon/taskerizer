@@ -1,4 +1,4 @@
-use std::fs::PathBuf;
+use std::path::PathBuf;
 
 pub struct Config {
     pub db_path: PathBuf,

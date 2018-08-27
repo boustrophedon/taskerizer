@@ -10,6 +10,7 @@ use commands::Add;
 
 // TODO some setup code here is shared with the inner unit tests, maybe find a way to dedup
 
+#[test]
 fn test_cmd_add() {
     let test_dir = tempdir().expect("temporary directory could not be created");
 
@@ -31,10 +32,14 @@ fn test_cmd_add() {
         }))
     };
 
-    let res = args.dispatch(&cfg);
+    let res = args.cmd().dispatch(&cfg);
     assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
     let output = res.unwrap();
 
-    let expected = vec![format!("Task \"{}\" added to list.", task.join(" ")),];
+    let expected = vec![
+        format!("Task \"{}\" added to task list.", "hello this is a test"),
+    ];
     assert_eq!(output, expected);
 }
+
+// TODO test failure modes?

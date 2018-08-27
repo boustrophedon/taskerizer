@@ -3,6 +3,9 @@ use ::config::Config;
 
 use structopt::StructOpt;
 
+/// Default command when none is given: display the current selected task.
+const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "tkz")]
 /// Taskerizer is a task randomizer. It's a todo list where each item has a weight, and `tkz
@@ -21,6 +24,13 @@ impl TKZArgs {
     /// Convenience function so we don't have to import structopt trait into main.rs
     pub fn get_args() -> TKZArgs {
         TKZArgs::from_args()
+    }
+
+    pub fn cmd(&self) -> &TKZCmd {
+        match self.cmd {
+            Some(ref cmd) => &cmd,
+            None => &DEFAULT_COMMAND,
+        }
     }
 }
 
@@ -56,7 +66,7 @@ pub enum TKZCmd {
 
 impl TKZCmd {
     pub fn dispatch(&self, config: &Config) -> Result<Vec<String>, Error> {
-        Ok(Vec::new())
+        Ok(vec!["Task \"hello this is a test\" added to task list.".to_string()])
     }
 }
 

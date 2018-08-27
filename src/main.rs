@@ -1,14 +1,11 @@
 extern crate taskerizer_prototype;
 use taskerizer_prototype::{commands, config::Config};
 
-use std::fs::PathBuf;
+use std::path::PathBuf;
 
 fn main() {
     let args = commands::TKZArgs::get_args();
-    let cmd = match args.cmd {
-        Some(cmd) => cmd,
-        None => commands::TKZCmd::Current(commands::Current{top: false}),
-    };
+    let cmd = args.cmd();
 
     println!("{:?}", cmd);
 
