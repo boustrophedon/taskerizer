@@ -1,8 +1,5 @@
 current todo:
-- change main to simply print out list of strings returned by dispatch (i.e. it's a render function which just renders a list of strings)
-- write test for dispatch on add and list
-- change command.dispatch to return a list of strings
-	- this makes command.dispatch testable
+- write test for dispatch list
 
 implement database operations:
 	- decide which operation to implement next
@@ -15,3 +12,8 @@ test and implement config parsing:
 	- Default::default impl if failure to read or file does not exist
 	- maybe add command line options at some point to select directory
 	- deserialize config
+
+write more tests for failure conditions:
+	- corrupt db?
+	- bad permissions on db directory
+	- bad permissions on config directory once config is implemented
