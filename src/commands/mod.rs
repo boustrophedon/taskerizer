@@ -6,6 +6,12 @@ use structopt::StructOpt;
 /// Default command when none is given: display the current selected task.
 const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
 
+// subcommand trait
+
+trait Subcommand {
+    fn run(&self, config: &Config) -> Result<Vec<String>, Error>;
+}
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "tkz")]
 /// Taskerizer is a task randomizer. It's a todo list where each item has a weight, and `tkz
@@ -66,23 +72,21 @@ pub enum TKZCmd {
 
 impl TKZCmd {
     pub fn dispatch(&self, config: &Config) -> Result<Vec<String>, Error> {
-        Ok(vec!["Task \"hello this is a test\" added to task list.".to_string()])
+        match self {
+            TKZCmd::Add(add) => add.run(config),
+            TKZCmd::List => {let l = List; l.run(config)},
+            _ => unimplemented!(),
+        }
     }
 }
 
 // --- subcommand parameter structs
 
-#[derive(StructOpt, Debug)]
-pub struct Add {
-    #[structopt(long = "break", short = "b")]
-    /// Put this task in the "break" category
-    pub reward: bool,
-    /// The priority/weight used to randomly select the task
-    pub priority: u32,
-    /// The task description
-    pub task: Vec<String>,
-}
+mod add;
+pub use self::add::Add;
 
+mod list;
+pub use self::list::List;
 
 #[derive(StructOpt, Debug)]
 pub struct Break {

@@ -1,11 +1,20 @@
 current todo:
-- write test for dispatch list
+- implement subcommand::run for list
 
 implement database operations:
 	- decide which operation to implement next
+		- Break: set break probability
+		- Current: display current task
+		- Complete: mark task as complete
+		- Skip: skip current task
 	- write test for that operation
 	- implement operation
 	- refactor, iterate
+
+improve display in list command:
+	- align columns
+		- format should be able to do this?
+		- probably cut off for overflow because we will still show the whole task in `current` command anyway
 
 test and implement config parsing:
 	- pick config dir and file
@@ -14,6 +23,7 @@ test and implement config parsing:
 	- deserialize config
 
 write more tests for failure conditions:
+	- Empty string for add
 	- corrupt db?
 	- bad permissions on db directory
 	- bad permissions on config directory once config is implemented
