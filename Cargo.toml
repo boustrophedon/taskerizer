@@ -3,6 +3,10 @@ name = "taskerizer-prototype"
 version = "0.1.0"
 authors = ["Harry Stern <hcs@meow.sh>"]
 
+[[bin]]
+name = "tkzr"
+path = "src/main.rs"
+
 [dependencies]
 structopt = "0.2"
 failure = "0.1"
