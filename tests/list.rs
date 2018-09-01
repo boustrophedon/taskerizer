@@ -32,16 +32,7 @@ fn test_cmd_list() {
         }))
     };
 
-    let res = args.cmd().dispatch(&cfg);
-    assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
-
-    // assert output says we added task to list
-    let output = res.unwrap();
-    let expected = vec![
-        format!("Task \"{}\" added to task list.", "hello this is a test"),
-    ];
-    assert_eq!(output, expected);
-
+    args.cmd().dispatch(&cfg).expect("Adding task failed");
 
     // -- do list command with same db that we just did add on
 
@@ -55,7 +46,7 @@ fn test_cmd_list() {
     let output = res.unwrap();
     let expected = vec![
         "Item\tTask\tPriority".to_string(),
-        "1\thello this is a test\t1".to_string(),
+        "1\thello this is a task\t1".to_string(),
     ];
     assert_eq!(output, expected);
 
