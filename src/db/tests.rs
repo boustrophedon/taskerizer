@@ -49,6 +49,17 @@ fn test_db_open() {
 }
 
 #[test]
+fn test_db_open_err_bad_dir() {
+    let test_dir = tempdir().expect("temporary directory could not be created");
+
+    let mut bad_dir = test_dir.path().to_path_buf();
+    bad_dir.push("bad");
+    let res = SqliteBackend::open(&bad_dir);
+
+    assert!(res.is_err(), "DB incorrectly opened without error: {:?}", res.unwrap());
+}
+
+#[test]
 fn test_db_metadata() {
     let before_creation = Utc::now();
     let (db, dir) = open_test_db();
