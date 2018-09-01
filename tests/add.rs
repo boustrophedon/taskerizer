@@ -38,6 +38,33 @@ fn test_cmd_add_empty() {
 }
 
 #[test]
+fn test_cmd_add_priority_0() {
+    let test_dir = tempdir().expect("temporary directory could not be created");
+
+    // don't use into_path because test_dir will not be deleted on drop
+    let db_path = test_dir.path().to_path_buf();
+
+    let cfg = Config {
+        db_path: db_path,
+    };
+
+    let task = vec!["hello", "this", "is", "a task"].into_iter().map(From::from).collect();
+    let args = TKZArgs {
+        cmd: Some(TKZCmd::Add( Add {
+            reward: false,
+            priority: 0,
+            task: task,
+        }))
+    };
+
+    let res = args.cmd().dispatch(&cfg);
+    assert!(res.is_err(), "Add command incorrectly succeded: {:?}", res.unwrap());
+    let err = res.unwrap_err();
+
+    assert!(err.to_string() == "Task cannot have priority 0 since it will never be selected.", "Incorrect error message: {}", err);
+}
+
+#[test]
 fn test_cmd_add() {
     let test_dir = tempdir().expect("temporary directory could not be created");
 
@@ -64,7 +91,56 @@ fn test_cmd_add() {
     let output = res.unwrap();
 
     let expected = vec![
-        format!("Task \"{}\" added to task list.", "hello this is a test"),
+        format!("Task \"{}\" added to task list.", "hello this is a task"),
+    ];
+    assert_eq!(output, expected);
+}
+
+#[test]
+fn test_cmd_add_two() {
+    let test_dir = tempdir().expect("temporary directory could not be created");
+
+    // don't use into_path because test_dir will not be deleted on drop
+    let db_path = test_dir.path().to_path_buf();
+
+    let cfg = Config {
+        db_path: db_path,
+    };
+
+    let task = vec!["hello", "this", "is", "a task"].into_iter().map(From::from).collect();
+    let args = TKZArgs {
+        cmd: Some(TKZCmd::Add( Add {
+            reward: false,
+            priority: 1,
+            task: task,
+        }))
+    };
+
+    let res = args.cmd().dispatch(&cfg);
+    assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
+    let output = res.unwrap();
+
+    let expected = vec![
+        format!("Task \"{}\" added to task list.", "hello this is a task"),
+    ];
+    assert_eq!(output, expected);
+
+
+    let task2 = vec!["yo", "this", "is", "another", "task"].into_iter().map(From::from).collect();
+    let args = TKZArgs {
+        cmd: Some(TKZCmd::Add( Add {
+            reward: true,
+            priority: 1,
+            task: task2,
+        }))
+    };
+
+    let res = args.cmd().dispatch(&cfg);
+    assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
+    let output = res.unwrap();
+
+    let expected = vec![
+        format!("Task \"{}\" added to task list.", "yo this is another task"),
     ];
     assert_eq!(output, expected);
 }

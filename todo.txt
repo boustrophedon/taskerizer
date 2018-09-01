@@ -1,5 +1,7 @@
 current todo:
+- add another list cmd test
 - implement subcommand::run for list
+	- implement real implementation of add using db
 
 implement database operations:
 	- decide which operation to implement next
@@ -23,7 +25,5 @@ test and implement config parsing:
 	- deserialize config
 
 write more tests for failure conditions:
-	- Empty string for add
 	- corrupt db?
-	- bad permissions on db directory
 	- bad permissions on config directory once config is implemented
