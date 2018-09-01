@@ -206,3 +206,18 @@ cli control flow is input (structopt) -> command (dispatch, business logic) -> o
 so really we could have different renders for each of the outputs of the commands
 
 but really they're all going to output the same type (a list of strings to print out, a widget tree, whatever ncurses does, or whatever)
+
+--
+
+could make taskerizer per-project by putting it in a dotfile in the current directory.
+
+interface would maybe be like `tkzr create [dir]` dir optional with default value current directory
+
+and then all commands would first look up the tree for a .tkzr/ before looking in the default 'global' directory
+
+alternatively use new vim model of putting per-directory files inside global dir. probably better option to do this.
+
+add override command -g --global to tkzr, or maybe option in config
+
+website/mobile implementation i guess would be "projects" and then the tkzr command would be `tkzr create <name> [dir]`, or maybe it just uses the name of the directory.
+	this is something where i could see it as being a paid feature, much like todoist

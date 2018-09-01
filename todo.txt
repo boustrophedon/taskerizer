@@ -1,7 +1,5 @@
 current todo:
-- add another list cmd test
-- implement subcommand::run for list
-	- implement real implementation of add using db
+	- choose some refactor task and do it
 
 implement database operations:
 	- decide which operation to implement next
@@ -13,16 +11,46 @@ implement database operations:
 	- implement operation
 	- refactor, iterate
 
+add ordering id to task in db:
+	- thoughts in todoist
+
+specify output ordering explicitly:
+	- right now it is specified in the code by virtue of the sqlite query order by clause
+	- this makes tests somewhat fragile
+	- property test the ordering
+
 improve display in list command:
 	- align columns
 		- format should be able to do this?
 		- probably cut off for overflow because we will still show the whole task in `current` command anyway
+related: implement Task::format_row and Task::format_long
+	- format row for list view
+	- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
+	
+factor out common code in tests:
+	- add and list command tests have lots of duplicated code, mostly making the tasks
+
+refactor subcommand getting entire config:
+	- due to passing in just the config, we get the db separately in each command
+		- currently, failure only tested in add command (plus in db::tests)
+	- more opportunities to screw it up
+	- instead, get rid of config parameter maybe and just pass in db as `impl DBBackend`
+	- get db in main i guess, but still using make_sqlite_backend?
 
 test and implement config parsing:
 	- pick config dir and file
 	- Default::default impl if failure to read or file does not exist
 	- maybe add command line options at some point to select directory
 	- deserialize config
+
+improve error messages:
+	- make custom fail types
+	- backtraces?
+		- so the thing here is that at the db level, inside add_task, I might do something like `format_err!("Could not insert into db: {}", e)` where e is an external error
+		- but then at a higher level i.e. the command level I might `format_err!("Could not add task: {}", e)`
+		- So what i really want is a backtrace. so the todo here is to determine whether this is what failure provides
+		- I want to be able to compose errors such that each level provides more details about what went wrong, so that when it bubbles up to the top layer I can display the top-level error message along with more details about what actually went wrong.
+		- Ideally you could almost write a paragraph. "Could not add task. Could not insert into database. Could not insert row into database. <SQLite error>". This is kind of what I get now by doing `.map_err(format_err!("[...]. {}", prev_err))`
 
 write more tests for failure conditions:
 	- corrupt db?

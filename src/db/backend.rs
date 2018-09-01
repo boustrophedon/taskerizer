@@ -4,19 +4,18 @@ use db::{SqliteBackend, DBMetadata};
 use task::Task;
 
 pub trait DBBackend {
-    type DBError;
     /// Get metadata about database
-    fn metadata(&self) -> Result<DBMetadata, Self::DBError>;
+    fn metadata(&self) -> Result<DBMetadata, Error>;
 
     /// Add task to database
-    fn add_task(&self, task: &Task) -> Result<(), Self::DBError>;
+    fn add_task(&self, task: &Task) -> Result<(), Error>;
 
     /// Return a `Vec` of all tasks from the database
-    fn get_all_tasks(&self) -> Result<Vec<Task>, Self::DBError>;
+    fn get_all_tasks(&self) -> Result<Vec<Task>, Error>;
 
     /// Close the database. This is not really required due to the implementation of Drop for the
     /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
-    fn close(self) -> Result<(), Self::DBError>;
+    fn close(self) -> Result<(), Error>;
 }
 
 // TODO currently we just format_err into essentially error strings because all we will do is
@@ -32,8 +31,6 @@ pub trait DBBackend {
 // you might not even need to pass in the idxes of field names, just the names.
 
 impl DBBackend for SqliteBackend {
-    type DBError = Error;
-
     fn metadata(&self) -> Result<DBMetadata, Error> {
         let (version, date_created) = self.connection.query_row(
             "SELECT version, date_created FROM metadata WHERE id = 1",
@@ -64,14 +61,14 @@ impl DBBackend for SqliteBackend {
         Ok(())
     }
 
-    fn get_all_tasks(&self) -> Result<Vec<Task>, Self::DBError> {
+    fn get_all_tasks(&self) -> Result<Vec<Task>, Error> {
         let mut tasks = Vec::new();
 
         let mut stmt = self.connection.prepare_cached(
             "SELECT task, priority, category
             FROM tasks
             ORDER BY
-             category DESC,
+             category ASC,
              priority DESC,
              task ASC
             ")
