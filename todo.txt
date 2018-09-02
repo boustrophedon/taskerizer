@@ -1,5 +1,5 @@
 current todo:
-	- choose some refactor task and do it
+	- try refactoring some of the db test code as well
 
 implement database operations:
 	- decide which operation to implement next
@@ -12,7 +12,7 @@ implement database operations:
 	- refactor, iterate
 
 add ordering id to task in db:
-	- thoughts in todoist
+	- for selecting/mapping output lists to db items, use an explicit ordering column that preserves the invariant UNIQUE and also that there are no gaps. on delete, shift everything up, and by default it appends. in a mobile/web app you would also be able to reorder i guess. what if you want to list by priority? do you change the ordering? no. but maybe you want the ordering column to insert such that instead of appending, you insert after the smallest task with a greater than or equal priority, so that the ordering id always matches the priority sorted id. you could also achieve this by sorting after every update if the sort is stable (wrt the task string etc.)
 
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
@@ -27,9 +27,6 @@ related: implement Task::format_row and Task::format_long
 	- format row for list view
 	- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
 	
-factor out common code in tests:
-	- add and list command tests have lots of duplicated code, mostly making the tasks
-
 refactor subcommand getting entire config:
 	- due to passing in just the config, we get the db separately in each command
 		- currently, failure only tested in add command (plus in db::tests)
