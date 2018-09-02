@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/boustrophedon/taskerizer-prototype.svg?branch=master)](https://travis-ci.org/boustrophedon/taskerizer-prototype)
+
 This is a prototype for Taskerizer, an app to help you pick what to do when faced with too many tasks.
 
 # Motivation
