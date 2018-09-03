@@ -1,8 +1,9 @@
-use task::Task;
 use db::DBBackend;
 
 use super::open_test_db;
 use super::arb_task_list;
+
+use super::utils::example_task_list;
 
 #[test]
 fn test_db_list_empty() {
@@ -21,32 +22,7 @@ fn test_db_list_empty() {
 fn test_db_list_added_manually() {
     let (db, _dir) = open_test_db();
 
-    // manually make a list of tasks
-
-    let mut tasks = Vec::new();
-    tasks.push( Task {
-        task: "test task please ignore".to_string(),
-        priority: 11,
-        reward: false,
-    });
-
-    tasks.push( Task {
-        task: "test task 2".to_string(),
-        priority: 12,
-        reward: true,
-    });
-
-    tasks.push( Task {
-        task: "test task 3".to_string(),
-        priority: 13,
-        reward: false,
-    });
-
-    tasks.push( Task {
-        task: "test task 4".to_string(),
-        priority: 14,
-        reward: true,
-    });
+    let tasks = example_task_list();
 
     // add all tasks to db
     for task in &tasks {

@@ -11,10 +11,36 @@ pub fn example_task_1() -> Task {
     }
 }
 
-pub fn example_task_break() -> Task {
+pub fn example_task_2() -> Task {
+    Task {
+        task: "test task please ignore 2".to_string(),
+        priority: 12,
+        reward: false,
+    }
+}
+
+pub fn example_task_break_1() -> Task {
     Task {
         task: "another tesk task with break set".to_string(),
         priority: 1,
         reward: true,
     }
+}
+
+pub fn example_task_break_2() -> Task {
+    Task {
+        task: "break with high priority".to_string(),
+        priority: 99,
+        reward: true,
+    }
+}
+
+
+pub fn example_task_list() -> Vec<Task> {
+    vec![
+        example_task_1(),
+        example_task_break_1(),
+        example_task_2(),
+        example_task_break_2(),
+    ]
 }

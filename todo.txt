@@ -1,5 +1,5 @@
 current todo:
-	- try refactoring some of the db test code as well
+	- implement current
 
 implement database operations:
 	- decide which operation to implement next
