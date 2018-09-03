@@ -1,29 +1,21 @@
-use task::Task;
 use db::DBBackend;
 
 use super::open_test_db;
 use super::arb_task;
 
+use super::utils::{example_task_1, example_task_break};
+
 #[test]
 fn test_db_add() {
     let (db, _dir) = open_test_db();
 
-    let task = Task {
-        task: "test task please ignore".to_string(),
-        priority: 1,
-        reward: false,
-    };
-
-    let reward = Task {
-        task: "test task please ignore".to_string(),
-        priority: 1,
-        reward: true,
-    };
+    let task = example_task_1();
+    let reward = example_task_break();
 
     let res = db.add_task(&task);
     assert!(res.is_ok(), "Adding task failed: {:?}, err: {}", task, res.unwrap_err());
     let res = db.add_task(&reward);
-    assert!(res.is_ok(), "Adding reward failed: {:?}, err: {}", reward, res.unwrap_err());
+    assert!(res.is_ok(), "Adding task with break failed: {:?}, err: {}", reward, res.unwrap_err());
 }
 
 proptest! {
@@ -36,4 +28,3 @@ proptest! {
         prop_assert!(db.add_task(&task2).is_ok(), "Adding task failed. task2: {:?}", task2);
     }
 }
-
