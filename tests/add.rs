@@ -23,12 +23,13 @@ fn test_cmd_add_empty() {
         }))
     };
 
-    // -- check failure
     let res = args.cmd().dispatch(&cfg);
-    assert!(res.is_err(), "Add command incorrectly succeded: {:?}", res.unwrap());
-    let err = res.unwrap_err();
 
-    // -- verify failure was due to empty task
+    // -- check failure
+    assert!(res.is_err(), "Add command incorrectly succeded: {:?}", res.unwrap());
+
+    // -- check failure was due to empty task
+    let err = res.unwrap_err();
     assert!(err.to_string() == "Task cannot be empty.", "Incorrect error message: {}", err);
 }
 
@@ -45,13 +46,13 @@ fn test_cmd_add_priority_0() {
             task: task,
         }))
     };
+    let res = args.cmd().dispatch(&cfg);
 
     // -- check failure
-    let res = args.cmd().dispatch(&cfg);
     assert!(res.is_err(), "Add command incorrectly succeded: {:?}", res.unwrap());
-    let err = res.unwrap_err();
 
-    // -- verify failure was due to 0 priority
+    // -- check failure was due to 0 priority
+    let err = res.unwrap_err();
     assert!(err.to_string() == "Task cannot have priority 0 since it will never be selected.", "Incorrect error message: {}", err);
 }
 
@@ -65,9 +66,9 @@ fn test_cmd_add() {
     // -- check success
     let res = args.cmd().dispatch(&cfg);
     assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
-    let output = res.unwrap();
 
-    // -- verify output
+    // -- check output has our task
+    let output = res.unwrap();
     let expected = vec![
         format!("Task \"{}\" added to task list.", "hello this is a task"),
     ];
@@ -80,13 +81,13 @@ fn test_cmd_add_two() {
 
     // -- do add command
     let args = test_utils::example_add_cmd1();
+    let res = args.cmd().dispatch(&cfg);
 
     // -- check success
-    let res = args.cmd().dispatch(&cfg);
     assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
-    let output = res.unwrap();
 
-    // -- verify output
+    // -- check output has our first task
+    let output = res.unwrap();
     let expected = vec![
         format!("Task \"{}\" added to task list.", "hello this is a task"),
     ];
@@ -95,13 +96,13 @@ fn test_cmd_add_two() {
 
     // -- do second add command
     let args = test_utils::example_add_cmd2();
+    let res = args.cmd().dispatch(&cfg);
 
     // -- check success
-    let res = args.cmd().dispatch(&cfg);
     assert!(res.is_ok(), "Add command failed: {}", res.unwrap_err());
-    let output = res.unwrap();
 
-    // -- verify output
+    // -- check output has our second task
+    let output = res.unwrap();
     let expected = vec![
         format!("Task \"{}\" added to task list.", "yo this is another task"),
     ];

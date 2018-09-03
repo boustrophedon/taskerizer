@@ -20,9 +20,11 @@ fn test_cmd_list() {
         cmd: Some(TKZCmd::List)
     };
     let res = args.cmd().dispatch(&cfg);
+
+    // -- check success
     assert!(res.is_ok(), "List command failed: {}", res.unwrap_err());
 
-    // -- assert output is the task we previously added
+    // -- check output has exactly the task we previously added
     let output = res.unwrap();
     let expected = vec![
         "Item\tTask\tPriority".to_string(),
@@ -52,9 +54,11 @@ fn test_cmd_list_two() {
         cmd: Some(TKZCmd::List)
     };
     let res = args.cmd().dispatch(&cfg);
+
+    // -- check success
     assert!(res.is_ok(), "List command failed: {}", res.unwrap_err());
 
-    // -- assert output is the task we previously added
+    // -- assert output has both tasks we previously added
     let output = res.unwrap();
     let expected = vec![
         "Item\tTask\tPriority".to_string(),
