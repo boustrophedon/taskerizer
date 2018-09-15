@@ -221,3 +221,11 @@ add override command -g --global to tkzr, or maybe option in config
 
 website/mobile implementation i guess would be "projects" and then the tkzr command would be `tkzr create <name> [dir]`, or maybe it just uses the name of the directory.
 	this is something where i could see it as being a paid feature, much like todoist
+
+---
+
+Going to try to make the tests use an in-memory db because it's slow on a test machine I use. i originally didn't want to do this because then you have the same problem as using a mock: you have to test the part that you're mocking separately. so I think probably what i'll end up doing is use the in-memory db for unit tests and writing to disk for integration tests (i.e. the tests in the tests/ directory)
+
+in order to do this I think i have to refactor the connection opening code or maybe more generally the config-based code to outside the commands. so i would acquire the db connection, and then dispatch the commands, only passing the connection and other data into the run function for each command. for the unit tests for the db I think I just need to change the call used in `src/db/tests/mod.rs:open_test_db`
+
+I should probably add a separate test for the db that actually opens and writes to disk
