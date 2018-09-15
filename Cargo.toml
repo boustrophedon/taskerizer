@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 structopt = "0.2"
 failure = "0.1"
-rusqlite = { version = "0.14", features = ["chrono"] }
+rusqlite = { version = "0.14", features = ["chrono", "bundled"] }
 chrono = "0.4"
 
 
