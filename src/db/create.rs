@@ -32,6 +32,21 @@ impl SqliteBackend {
         }
         Ok(db)
     }
+
+    #[cfg(test)]
+    /// Creates a taskerizer database in-memory. Only exists for testing purposes.
+    // There is a small amount of duplication here (eg the db.create_tables() call) but it's
+    // probably fine, though it could be the source of bugs if I change code in open but not in
+    // here.
+    pub fn open_in_memory() -> Result<SqliteBackend, Error> {
+        let conn = Connection::open_in_memory()?;
+        let db = SqliteBackend {
+            connection: conn,
+        };
+
+        db.create_tables()?;
+        Ok(db)
+    }
 }
 
 // Create table impls

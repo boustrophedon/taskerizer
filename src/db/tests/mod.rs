@@ -9,8 +9,16 @@ use db::{SqliteBackend, DBBackend};
 
 // utility functions
 
-// we have to return the TempDir so that it doesn't get dropped and therefore delete the db
-fn open_test_db() -> (SqliteBackend, TempDir) {
+/// Open an in-memory db for testing
+fn open_test_db() -> SqliteBackend {
+    let res = SqliteBackend::open_in_memory();
+    assert!(res.is_ok(), "Failed to open sqlite backend in-memory: {}", res.unwrap_err());
+    res.unwrap()
+}
+
+/// Opens an on-disk database for testing
+/// Returns the TempDir so that it does not go out of scope and delete the database file
+fn open_test_db_on_disk() -> (SqliteBackend, TempDir) {
     let test_dir = tempdir().expect("temporary directory could not be created");
  
     let res = SqliteBackend::open(&test_dir);
@@ -44,8 +52,8 @@ prop_compose! {
 // tests
 
 #[test]
-fn test_db_open() {
-    open_test_db();
+fn test_db_open_on_disk() {
+    open_test_db_on_disk();
 }
 
 #[test]
@@ -60,9 +68,11 @@ fn test_db_open_err_bad_dir() {
 }
 
 #[test]
+/// This test tests both that the metadata is written and that it is stored to disk. It acts as
+/// both a metadata table check and a sanity "is stuff being written to disk" check.
 fn test_db_metadata() {
     let before_creation = Utc::now();
-    let (db, dir) = open_test_db();
+    let (db, dir) = open_test_db_on_disk();
 
     // close connection and record time
     db.close().expect("closing db connection failed");

@@ -7,7 +7,7 @@ use super::utils::example_task_list;
 
 #[test]
 fn test_db_list_empty() {
-    let (db, _dir) = open_test_db();
+    let db = open_test_db();
 
     // get nothing from db
     let res = db.get_all_tasks();
@@ -20,7 +20,7 @@ fn test_db_list_empty() {
 
 #[test]
 fn test_db_list_added_manually() {
-    let (db, _dir) = open_test_db();
+    let db = open_test_db();
 
     let tasks = example_task_list();
 
@@ -48,7 +48,7 @@ fn test_db_list_added_manually() {
 proptest! {
     #[test]
     fn test_db_list_arb(tasks in arb_task_list()) {
-        let (db, _dir) = open_test_db();
+        let db = open_test_db();
 
         // add all tasks to db
         for task in &tasks {
