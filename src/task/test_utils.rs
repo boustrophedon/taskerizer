@@ -21,6 +21,14 @@ pub fn example_task_2() -> Task {
     }
 }
 
+pub fn example_task_3() -> Task {
+    Task {
+        task: "just another task".to_string(),
+        priority: 2,
+        reward: false,
+    }
+}
+
 pub fn example_task_break_1() -> Task {
     Task {
         task: "another tesk task with break set".to_string(),
@@ -50,7 +58,19 @@ pub fn example_task_list() -> Vec<Task> {
 
 prop_compose! {
     [pub] fn arb_task()(task in any::<String>(),
-                  priority in any::<u32>(),
+                  priority in 1u32..,
+                  reward in any::<bool>()) -> Task {
+        Task {
+            task: task,
+            priority: priority,
+            reward: reward,
+        }
+    }
+}
+
+prop_compose! {
+    [pub] fn arb_task_bounded()(task in ".{0,50}",
+                  priority in 1..100u32,
                   reward in any::<bool>()) -> Task {
         Task {
             task: task,
@@ -62,6 +82,14 @@ prop_compose! {
 
 prop_compose! {
     [pub] fn arb_task_list()(tasks in prop::collection::vec(arb_task(), 1..100))
+        -> Vec<Task> {
+            tasks
+    }
+}
+
+
+prop_compose! {
+    [pub] fn arb_task_list_bounded()(tasks in prop::collection::vec(arb_task_bounded(), 1..100))
         -> Vec<Task> {
             tasks
     }
