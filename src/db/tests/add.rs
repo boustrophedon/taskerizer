@@ -1,9 +1,8 @@
 use db::DBBackend;
 
 use super::open_test_db;
-use super::arb_task;
 
-use super::utils::{example_task_1, example_task_break_1};
+use task::test_utils::{example_task_1, example_task_break_1, arb_task};
 
 #[test]
 fn test_db_add() {

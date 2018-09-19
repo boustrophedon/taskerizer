@@ -4,3 +4,6 @@ pub struct Task {
     pub priority: u32,
     pub reward: bool,
 }
+
+#[cfg(test)]
+pub(crate) mod test_utils;

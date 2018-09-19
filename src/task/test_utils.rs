@@ -1,3 +1,5 @@
+use proptest::prelude::*;
+
 use task::Task;
 
 // we can't currently make these statics (without using lazy_static)
@@ -35,7 +37,6 @@ pub fn example_task_break_2() -> Task {
     }
 }
 
-
 pub fn example_task_list() -> Vec<Task> {
     vec![
         example_task_1(),
@@ -44,3 +45,25 @@ pub fn example_task_list() -> Vec<Task> {
         example_task_break_2(),
     ]
 }
+
+// proptest gen functions
+
+prop_compose! {
+    [pub] fn arb_task()(task in any::<String>(),
+                  priority in any::<u32>(),
+                  reward in any::<bool>()) -> Task {
+        Task {
+            task: task,
+            priority: priority,
+            reward: reward,
+        }
+    }
+}
+
+prop_compose! {
+    [pub] fn arb_task_list()(tasks in prop::collection::vec(arb_task(), 1..100))
+        -> Vec<Task> {
+            tasks
+    }
+}
+

@@ -1,10 +1,7 @@
-use proptest::prelude::*;
-
 use tempfile::{tempdir, TempDir};
 
 use chrono::Utc;
 
-use task::Task;
 use db::{SqliteBackend, DBBackend};
 
 // utility functions
@@ -27,28 +24,6 @@ fn open_test_db_on_disk() -> (SqliteBackend, TempDir) {
 
     (db, test_dir)
 }
-
-// proptest gen functions
-
-prop_compose! {
-    fn arb_task()(task in any::<String>(),
-                  priority in any::<u32>(),
-                  reward in any::<bool>()) -> Task {
-        Task {
-            task: task,
-            priority: priority,
-            reward: reward,
-        }
-    }
-}
-
-prop_compose! {
-    fn arb_task_list()(tasks in prop::collection::vec(arb_task(), 1..100))
-        -> Vec<Task> {
-            tasks
-    }
-}
-
 // tests
 
 #[test]
@@ -91,5 +66,3 @@ fn test_db_metadata() {
 
 mod add;
 mod list;
-
-mod utils;

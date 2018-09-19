@@ -1,9 +1,8 @@
 use db::DBBackend;
 
 use super::open_test_db;
-use super::arb_task_list;
 
-use super::utils::example_task_list;
+use task::test_utils::{example_task_list, arb_task_list};
 
 #[test]
 fn test_db_list_empty() {
