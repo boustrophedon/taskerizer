@@ -52,11 +52,22 @@ impl SqliteBackend {
 // Create table impls
 impl SqliteBackend {
     fn create_tables(&self) -> Result<(), Error> {
-        // self.enable_foreign_keys_pragma()?;
+        self.enable_foreign_keys_pragma()?;
         self.create_metadata_table()?;
         self.create_tasks_table()?;
-        // self.create_current_table()?;
+        self.create_current_table()?;
         // self.create_completed_table()?;
+        Ok(())
+    }
+
+    fn enable_foreign_keys_pragma(&self) -> Result<(), Error> {
+        let conn = &self.connection;
+
+        conn.execute(
+            "PRAGMA foreign_keys = ON;",
+            &[]
+        ).map_err(|e| format_err!("Could not enable foreign keys pragma: {}", e))?;
+
         Ok(())
     }
 
@@ -101,5 +112,21 @@ impl SqliteBackend {
 
         Ok(())
     }
+
+	fn create_current_table(&self) -> Result<(), Error> {
+		let conn = &self.connection;
+
+		conn.execute(
+			"CREATE TABLE current (
+					id INTEGER PRIMARY KEY check (id = 1),
+					task_id INTEGER NOT NULL,
+					FOREIGN KEY (task_id) REFERENCES tasks(id)
+			);",
+			&[]
+		).map_err(|e| format_err!("Could not create current task table: {}", e))?;
+
+		Ok(())
+	}
+
 }
 

@@ -229,3 +229,25 @@ Going to try to make the tests use an in-memory db because it's slow on a test m
 in order to do this I think i have to refactor the connection opening code or maybe more generally the config-based code to outside the commands. so i would acquire the db connection, and then dispatch the commands, only passing the connection and other data into the run function for each command. for the unit tests for the db I think I just need to change the call used in `src/db/tests/mod.rs:open_test_db`
 
 I should probably add a separate test for the db that actually opens and writes to disk
+
+---
+
+I think the proper way to implement the "current task" is to make the db expose a "select current" method. this doesn't actually break any invariants by itself - only not using it in other places does. 
+
+so the problem is then where should we do so? in the top-level dispatched functions or inside the db functions themselves?
+
+that is: should the DBBackend::add_task select a current task when there are none, or should that be up to the higher level function? from a separation of concerns viewpoint it shouldn't do anything other than add a task, but from a "state-consistency" point of view it kind of should. 
+
+given that the db module is pub(crate) and not a real "public api" i think it's okay that you can put it in a somewhat inconsistent state. the rule "when you add a new task, if there are no current tasks, select one" is kind of more a "business rule" than a technical constraint
+
+---
+
+the above idea has the same problem that add has: we don't actually check that add is *really* working in the add tests, we just check that it doesn't error. the tests for list task and get current task are actually testing the implementations of add as well - if add or select current task (respectively) are broken, their tests don't fail, the tests for list/get_current fail. but we can't really test list without having a working add.
+
+i'm not really sure what the right thing to do here is. maybe there's a better, more testable design.
+
+one thing I considered is that both add and select_current task should return the task that was added/selected, but that doesn't actually check that they were stored - only reading them back checks that they were stored, which is again testing list.
+
+---
+
+I suppose the right thing to do in terms of TDD would be to mock the rest of the db but 1. you would still need to define the "get/list" api in each mock and 2. you would still need to write integration tests so why write the mocks

@@ -66,3 +66,4 @@ fn test_db_metadata() {
 
 mod add;
 mod list;
+mod choose_current;

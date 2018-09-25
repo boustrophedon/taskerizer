@@ -13,6 +13,17 @@ pub trait DBBackend {
     /// Return a `Vec` of all tasks from the database
     fn get_all_tasks(&self) -> Result<Vec<Task>, Error>;
 
+    /// Choose a new task at random to be the current task. Note that if the existing current task is not
+    /// removed, it may be selected again. `p` is a parameter that must be between 0 and 1 which
+    /// represents a probability, used to select the task with the `select_task` function. The
+    /// `reward` parameter determines whether the task selected is selected from the break tasks or
+    /// the regular tasks.
+    ///
+    /// The use of &mut self here is essentially an implementation detail: in the SQLite backend,
+    /// in order to run the queries necessary to choose the task as a transaction, we need a
+    /// mutable reference to the connection.
+    fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error>;
+
     /// Close the database. This is not really required due to the implementation of Drop for the
     /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
     fn close(self) -> Result<(), Error>;
@@ -88,6 +99,66 @@ impl DBBackend for SqliteBackend {
         }
 
         Ok(tasks)
+    }
+
+    fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error> {
+        if p < 0.0 {
+            return Err(format_err!("p parameter was less than 0"));
+        }
+        if p > 1.0 {
+            return Err(format_err!("p parameter was greater than 1"));
+        }
+
+        // TODO change get_all_tasks to either return a UUID or internally add another
+        // "get_all_tasks_with_rowid" and use it both here and in get_all_tasks
+
+        let mut tasks = Vec::new();
+
+        let tx = self.connection.transaction()
+            .map_err(|e| format_err!("Error initiating a transaction: {}", e))?;
+
+        let mut stmt = tx.prepare_cached(
+            "SELECT id, task, priority, category
+            FROM tasks
+            WHERE
+            category = ?1
+            ORDER BY
+             category ASC,
+             priority DESC,
+             task ASC
+            ")
+            .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
+
+        let rows = stmt.query_map(&[&reward], |row| {
+                (row.get(0), // id
+                Task {
+                    task: row.get(1),
+                    priority: row.get(2),
+                    reward: row.get(3)
+                })
+             })
+            .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
+
+        for task_res in rows {
+            let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            tasks.push(task);
+        }
+
+        // TODO not sure if it should be an error to do this when there are no items but it's
+        // probably fine
+        if tasks.len() == 0 {
+            return Ok(());
+        }
+
+        let selected_task_id = select_task(p, &tasks);
+
+        tx.execute_named(
+            "REPLACE INTO current (id, task_id)
+            VALUES (1, :task_id)",
+            &[(":task_id", &selected_task_id)])
+            .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
+
+        Ok(())
     }
 
     fn close(self) -> Result<(), Error> {
