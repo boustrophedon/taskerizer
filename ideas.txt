@@ -251,3 +251,24 @@ one thing I considered is that both add and select_current task should return th
 ---
 
 I suppose the right thing to do in terms of TDD would be to mock the rest of the db but 1. you would still need to define the "get/list" api in each mock and 2. you would still need to write integration tests so why write the mocks
+
+---
+
+as expected, when I wrote the tests and code for get_current_task, my tests are failing but I can't tell whether it's the choose_current_task code or get_current_task code.
+
+given that the tests for choose_current_task pass with some extra checks that I added to return errors if anything other than exactly 1 row is modified, I am still pretty confident that the choose_current_task code is working but that's partially an artifact of the fact that i'm using rust rather than my testing strategy.
+
+---
+
+the problem was indeed in choose_current and in fact it was a feature of rust that was the problem: i made a transaction to do all the updating queries and inserts atomically, but then the transaction in rusqlite is rolled-back by default when it goes out of scope unless you explicitly call tx.commit(), consuming the transaction. i think an even more advanced type system could possibly fix this. i am not sure/ don't think it can be fixed by putting a #[must_use] annotation on the transaction struct itself. maybe it can.
+
+---
+
+okay second problem: if we call choose_current_task with reward: true and there are no rewards, or reward: false and there are no tasks, we return Ok. This doesn't put the database in an invalid state but it also doesn't really do what we want.
+
+Options: return an error, or leave it and document the behavior
+
+probably return an error: if the end result of calling "choose a new task" doesn't result in a new task being chosen, that's probably an error. 
+in the higher level code we can check if there are any tasks/breaks before actually calling choose new task. e.g. grey out the box. 
+
+in higher level code we're going to select task/break as a separate probability anyway. i.e. "if there are tasks and breaks / if there are tasks / if there are breaks / if neither" so we should always know beforehand anyway. therefore it should be an error.

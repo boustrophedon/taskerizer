@@ -3,6 +3,8 @@ use db::{SqliteBackend, DBMetadata};
 
 use task::Task;
 
+use rusqlite::Result as SQLResult;
+
 pub trait DBBackend {
     /// Get metadata about database
     fn metadata(&self) -> Result<DBMetadata, Error>;
@@ -26,6 +28,10 @@ pub trait DBBackend {
     /// in order to run the queries necessary to choose the task as a transaction, we need a
     /// mutable reference to the connection.
     fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error>;
+
+    /// Returns the currently selected task if there is one, or None if there are no tasks in the
+    /// database.  This function should never return None if there are tasks in the database.
+    fn get_current_task(&self) -> Result<Option<Task>, Error>;
 
     /// Close the database. This is not really required due to the implementation of Drop for the
     /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
@@ -129,8 +135,8 @@ impl DBBackend for SqliteBackend {
                 WHERE
                 category = ?1
                 ORDER BY
-                 priority DESC,
-                 task DESC
+                 priority ASC,
+                 task ASC
                 ")
                 .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
 
@@ -173,6 +179,42 @@ impl DBBackend for SqliteBackend {
 
 
         Ok(())
+    }
+
+    fn get_current_task(&self) -> Result<Option<Task>, Error> {
+        let mut stmt = self.connection.prepare_cached(
+            "SELECT task, priority, category
+            FROM tasks
+            WHERE id = (
+                SELECT task_id FROM current
+                WHERE id = 1
+            )
+            ")
+            .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
+
+        let mut rows: Vec<SQLResult<Task>> = stmt.query_map(&[], |row| {
+                Task {
+                    task: row.get(0),
+                    priority: row.get(1),
+                    reward: row.get(2)
+                }
+             })
+            .map_err(|e| format_err!("Error executing current task query: {}", e))?
+            .collect();
+
+        if rows.len() == 0 {
+            return Ok(None);
+        }
+
+        if rows.len() > 1 {
+            return Err(format_err!("Multiple tasks selected in current task query. {} tasks, selected {:?}", rows.len(), rows))
+        }
+
+        // unwrap is fine, we check that there is one element directly above
+        let current_task = rows.pop().unwrap()
+            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+
+        Ok(Some(current_task))
     }
 
     fn close(self) -> Result<(), Error> {
