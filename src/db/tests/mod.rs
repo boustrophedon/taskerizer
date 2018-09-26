@@ -1,3 +1,5 @@
+use std::env;
+
 use tempfile::{tempdir, TempDir};
 
 use chrono::Utc;
@@ -6,10 +8,23 @@ use db::{SqliteBackend, DBBackend};
 
 // utility functions
 
-/// Open an in-memory db for testing
+/// Open an in-memory db for testing. If the environment variable `TKZR_TEST_SAVE_DB` is set, the
+/// db used for this test is saved on disk into `/tmp/tkzr/test` and the directory is printed at runtime.
 fn open_test_db() -> SqliteBackend {
-    let res = SqliteBackend::open_in_memory();
-    assert!(res.is_ok(), "Failed to open sqlite backend in-memory: {}", res.unwrap_err());
+    let res = match env::var("TKZR_TEST_SAVE_DB") {
+        Ok(_) => {
+            // the into_path() call "leaks" the tempdir so it is not deleted
+            let test_dir = TempDir::new_in("/tmp/tkzr/test").expect("temporary test database directory could not be created")
+                .into_path();
+
+            println!("creating test db in: {}", test_dir.display());
+
+            SqliteBackend::open(&test_dir)
+        },
+        Err(_) => SqliteBackend::open_in_memory(),
+    };
+
+    assert!(res.is_ok(), "Failed to open sqlite backend: {}", res.unwrap_err());
     res.unwrap()
 }
 
@@ -19,7 +34,7 @@ fn open_test_db_on_disk() -> (SqliteBackend, TempDir) {
     let test_dir = tempdir().expect("temporary directory could not be created");
  
     let res = SqliteBackend::open(&test_dir);
-    assert!(res.is_ok(), "Error opening db: {}", res.unwrap_err());
+    assert!(res.is_ok(), "Error opening on-disk sqlite backend: {}", res.unwrap_err());
     let db = res.unwrap();
 
     (db, test_dir)
