@@ -118,47 +118,53 @@ impl DBBackend for SqliteBackend {
         let mut tasks = Vec::new();
 
         let tx = self.connection.transaction()
-            .map_err(|e| format_err!("Error initiating a transaction: {}", e))?;
+            .map_err(|e| format_err!("Error initiating transaction to choose current task: {}", e))?;
 
-        let mut stmt = tx.prepare_cached(
-            "SELECT id, task, priority, category
-            FROM tasks
-            WHERE
-            category = ?1
-            ORDER BY
-             priority DESC,
-             task DESC
-            ")
-            .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
+        // transaction scope
+        // necessary due to no NLL but also could be moved into a separate function
+        {
+            let mut stmt = tx.prepare_cached(
+                "SELECT id, task, priority, category
+                FROM tasks
+                WHERE
+                category = ?1
+                ORDER BY
+                 priority DESC,
+                 task DESC
+                ")
+                .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
 
-        let rows = stmt.query_map(&[&reward], |row| {
-                (row.get(0), // id
-                Task {
-                    task: row.get(1),
-                    priority: row.get(2),
-                    reward: row.get(3)
-                })
-             })
-            .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
+            let rows = stmt.query_map(&[&reward], |row| {
+                    (row.get(0), // id
+                    Task {
+                        task: row.get(1),
+                        priority: row.get(2),
+                        reward: row.get(3)
+                    })
+                 })
+                .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
 
-        for task_res in rows {
-            let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-            tasks.push(task);
+            for task_res in rows {
+                let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+                tasks.push(task);
+            }
+
+            // TODO not sure if it should be an error to do this when there are no items but it's
+            // probably fine
+            if tasks.len() == 0 {
+                return Ok(());
+            }
+
+            let selected_task_id = select_task(p, &tasks);
+
+            tx.execute_named(
+                "REPLACE INTO current (id, task_id)
+                VALUES (1, :task_id)",
+                &[(":task_id", &selected_task_id)])
+                .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
         }
-
-        // TODO not sure if it should be an error to do this when there are no items but it's
-        // probably fine
-        if tasks.len() == 0 {
-            return Ok(());
-        }
-
-        let selected_task_id = select_task(p, &tasks);
-
-        tx.execute_named(
-            "REPLACE INTO current (id, task_id)
-            VALUES (1, :task_id)",
-            &[(":task_id", &selected_task_id)])
-            .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
+        tx.commit()
+            .map_err(|e| format_err!("Error committing transation to choose current task: {}", e))?;
 
         Ok(())
     }
