@@ -19,6 +19,9 @@ pub trait DBBackend {
     /// `reward` parameter determines whether the task selected is selected from the break tasks or
     /// the regular tasks.
     ///
+    /// TODO: specify the ordering more precisely by making the secondary sort key after priority
+    /// something like date added. currently the task list is sorted by priority and then text.
+    ///
     /// The use of &mut self here is essentially an implementation detail: in the SQLite backend,
     /// in order to run the queries necessary to choose the task as a transaction, we need a
     /// mutable reference to the connection.
@@ -123,9 +126,8 @@ impl DBBackend for SqliteBackend {
             WHERE
             category = ?1
             ORDER BY
-             category ASC,
              priority DESC,
-             task ASC
+             task DESC
             ")
             .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
 
