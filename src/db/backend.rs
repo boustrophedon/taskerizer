@@ -110,7 +110,9 @@ fn select_task(p: f32, tasks: &[(i32, Task)]) -> i32 {
     // we don't actually need the tasks to be ordered, though they will come in ordered
     //debug_assert!(tasks.windows(2).all(|t1, t2| t1.priority <= t2.priority))
 
-    let total_priority = tasks.iter().fold(0, |acc, (_, task)| acc + task.priority) as f32;
+    // TODO we convert the u32 into f32 to get around overflow issues but we could handle it
+    // better
+    let total_priority = tasks.iter().fold(0f32, |acc, (_, task)| acc + task.priority as f32);
 
     let mut current_interval = 0.0;
     for (id, task) in tasks {
