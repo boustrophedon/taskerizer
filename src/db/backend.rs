@@ -101,7 +101,7 @@ impl DBBackend for SqliteBackend {
 /// the priorities are added up and divided into intervals proportional to each `Task`s priority,
 /// choose the Task whose interval `p` lies in. In pretty much all use cases we will have to
 /// handled zero tasks separately anyway, so we panic if `tasks` is empty.
-fn select_task(p: f32, tasks: &[Task]) -> &Task {
+fn select_task(p: f32, tasks: &[(i32, Task)]) -> i32 {
     debug_assert!(0.0 <= p);
     debug_assert!(p <= 1.0);
 
@@ -110,20 +110,20 @@ fn select_task(p: f32, tasks: &[Task]) -> &Task {
     // we don't actually need the tasks to be ordered, though they will come in ordered
     //debug_assert!(tasks.windows(2).all(|t1, t2| t1.priority <= t2.priority))
 
-    let total_priority = tasks.iter().fold(0, |acc, task| acc + task.priority) as f32;
+    let total_priority = tasks.iter().fold(0, |acc, (_, task)| acc + task.priority) as f32;
 
     let mut current_interval = 0.0;
-    for task in tasks {
+    for (id, task) in tasks {
         current_interval += task.priority as f32/total_priority;
         if p <= current_interval {
-            return &task;
+            return *id;
         }
     }
     // very unlikely, but due to rounding error we could choose p=0.99999... and the sum might
     // round to 0.99998 at the end, so we return the last task as a best effort. This line will
     // probably never be reached ever.
     let len = tasks.len();
-    return &tasks[len-1];
+    return tasks[len-1].0;
 }
 
 
@@ -135,27 +135,27 @@ mod select_tests {
 
     #[test]
     fn test_select_task_single() {
-        let tasks = vec![example_task_1()];
+        let tasks = vec![(1, example_task_1())];
 
-        assert_eq!(select_task(0.0, &tasks), &tasks[0]);
-        assert_eq!(select_task(0.5, &tasks), &tasks[0]);
-        assert_eq!(select_task(1.0, &tasks), &tasks[0]);
+        assert_eq!(select_task(0.0, &tasks), 1);
+        assert_eq!(select_task(0.5, &tasks), 1);
+        assert_eq!(select_task(1.0, &tasks), 1);
     }
 
     #[test]
     fn test_select_task_two() {
-        let tasks = vec![example_task_1(), example_task_3()];
+        let tasks = vec![(1, example_task_1()), (2, example_task_3())];
 
-        assert_eq!(select_task(0.0, &tasks), &tasks[0]);
-        assert_eq!(select_task(0.2, &tasks), &tasks[0]);
-        assert_eq!(select_task(0.34, &tasks), &tasks[1]);
-        assert_eq!(select_task(0.5, &tasks), &tasks[1]);
-        assert_eq!(select_task(1.0, &tasks), &tasks[1]);
+        assert_eq!(select_task(0.0, &tasks), 1);
+        assert_eq!(select_task(0.2, &tasks), 1);
+        assert_eq!(select_task(0.34, &tasks), 2);
+        assert_eq!(select_task(0.5, &tasks), 2);
+        assert_eq!(select_task(1.0, &tasks), 2);
     }
 
-    fn assert_select_in_order(tasks: &[Task]) {
+    fn assert_select_in_order(tasks: &[(i32, Task)]) {
         // kind of ugly test because we're duplicating a computation inside the actual function
-        let total_priority = tasks.iter().fold(0, |acc, task| acc + task.priority) as f32;
+        let total_priority = tasks.iter().fold(0, |acc, (_, task)| acc + task.priority) as f32;
         let min_sep = 1.0/total_priority/2.0;
 
         // walk through tasks by selecting them at an interval smaller than the smallest selection
@@ -164,24 +164,27 @@ mod select_tests {
 
         let mut accum = 0.0;
         let mut orig_idx = 0;
-        let mut selected = vec![select_task(accum, &tasks).clone()];
+        let mut selected = vec![select_task(accum, &tasks)];
         while accum <= 1.0 {
             let current = select_task(accum, &tasks);
-            if current != &tasks[orig_idx] {
-                selected.push(current.clone());
+            if current != tasks[orig_idx].0 {
+                selected.push(current);
                 orig_idx+=1;
             }
 
             accum+=min_sep;
         }
 
-        assert_eq!(selected, tasks);
+        let ids: Vec<i32> = tasks.iter().map(|(id, _)| *id).collect();
+        assert_eq!(selected, ids);
     }
 
     #[test]
     fn test_select_task_list() {
         let tasks = example_task_list();
+        let len = tasks.len() as i32;
 
+        let tasks: Vec<(i32, Task)> = (1..len+1).zip(tasks).collect();
         assert_select_in_order(&tasks);
     }
 
@@ -190,6 +193,8 @@ mod select_tests {
         #![proptest_config(Config::with_cases(10))]
         #[test]
         fn test_select_task_list_arb(tasks in arb_task_list_bounded()) {
+            let len = tasks.len() as i32;
+            let tasks: Vec<(i32, Task)> = (1..len+1).zip(tasks).collect();
             assert_select_in_order(&tasks);
         }
     }
