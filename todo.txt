@@ -1,10 +1,14 @@
 current todo:
-	- implement current
+	- refactor some stuff
+	- implement frontend for current
+		- display current task in list with asterisk or something
+		- determine whether to select current in add or current or whatever
+			- i think it's probably simpler if we only choose the current task when the current command is run
+			- it does mean that if we run list then there might not be a current task selected
 
 implement database operations:
 	- decide which operation to implement next
 		- Break: set break probability
-		- Current: display current task
 		- Complete: mark task as complete
 		- Skip: skip current task
 	- write test for that operation
@@ -17,7 +21,6 @@ add ordering id to task in db:
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
 	- this makes tests somewhat fragile
-	- property test the ordering
 
 improve display in list command:
 	- align columns
@@ -28,7 +31,7 @@ related: implement Task::format_row and Task::format_long
 	- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
 	
 refactor subcommand getting entire config:
-	- due to passing in just the config, we get the db separately in each command
+	- due to passing in just the config, we connect to the db separately in each command
 		- currently, failure only tested in add command (plus in db::tests)
 	- more opportunities to screw it up
 	- instead, get rid of config parameter maybe and just pass in db as `impl DBBackend`
