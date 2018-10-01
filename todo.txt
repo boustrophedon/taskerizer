@@ -1,11 +1,5 @@
 current todo:
-		
-	refactor subcommand getting entire config:
-		- due to passing in just the config, we connect to the db separately in each command
-			- currently, failure only tested in add command (plus in db::tests)
-		- more opportunities to screw it up
-		- instead, get rid of config parameter maybe and just pass in db as `impl DBBackend`
-		- get db in main i guess, but still using make_sqlite_backend?
+	- use structopt default_value option instead Option<TKZCmd> in TKZArgs
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
