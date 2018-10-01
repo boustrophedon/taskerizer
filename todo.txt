@@ -1,5 +1,11 @@
 current todo:
-	- refactor some stuff
+		
+	refactor subcommand getting entire config:
+		- due to passing in just the config, we connect to the db separately in each command
+			- currently, failure only tested in add command (plus in db::tests)
+		- more opportunities to screw it up
+		- instead, get rid of config parameter maybe and just pass in db as `impl DBBackend`
+		- get db in main i guess, but still using make_sqlite_backend?
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
@@ -29,13 +35,6 @@ improve display in list command:
 related: implement Task::format_row and Task::format_long
 	- format row for list view
 	- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
-	
-refactor subcommand getting entire config:
-	- due to passing in just the config, we connect to the db separately in each command
-		- currently, failure only tested in add command (plus in db::tests)
-	- more opportunities to screw it up
-	- instead, get rid of config parameter maybe and just pass in db as `impl DBBackend`
-	- get db in main i guess, but still using make_sqlite_backend?
 
 test and implement config parsing:
 	- pick config dir and file

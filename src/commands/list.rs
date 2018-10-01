@@ -1,7 +1,6 @@
 use failure::Error;
-use config::Config;
 
-use db::{make_sqlite_backend, DBBackend};
+use db::DBBackend;
 //use task::Task;
 
 use super::Subcommand;
@@ -10,9 +9,7 @@ use super::Subcommand;
 pub struct List;
 
 impl Subcommand for List {
-    fn run(&self, config: &Config) -> Result<Vec<String>, Error> {
-        let db = make_sqlite_backend(&config.db_path)
-            .map_err(|e| format_err!("Could not acquire database connection. {}", e))?;
+    fn run(&self, db: &impl DBBackend) -> Result<Vec<String>, Error> {
 
         let tasks = db.get_all_tasks()
             .map_err(|e| format_err!("Could not get tasks from database. {}", e))?;

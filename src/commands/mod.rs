@@ -1,7 +1,9 @@
 use failure::{Error, err_msg};
-use config::Config;
 
 use structopt::StructOpt;
+
+use db::{make_sqlite_backend, DBBackend};
+use config::Config;
 
 /// Default command when none is given: display the current selected task.
 const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
@@ -9,7 +11,7 @@ const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
 // subcommand trait
 
 trait Subcommand {
-    fn run(&self, config: &Config) -> Result<Vec<String>, Error>;
+    fn run(&self, config: &impl DBBackend) -> Result<Vec<String>, Error>;
 }
 
 #[derive(StructOpt, Debug)]
@@ -72,9 +74,12 @@ pub enum TKZCmd {
 
 impl TKZCmd {
     pub fn dispatch(&self, config: &Config) -> Result<Vec<String>, Error> {
+        let db = make_sqlite_backend(&config.db_path)
+            .map_err(|e| format_err!("Could not acquire database connection. {}", e))?;
+
         match self {
-            TKZCmd::Add(add) => add.run(config),
-            TKZCmd::List => {let l = List; l.run(config)},
+            TKZCmd::Add(add) => add.run(&db),
+            TKZCmd::List => {let l = List; l.run(&db)},
             _ => unimplemented!(),
         }
     }

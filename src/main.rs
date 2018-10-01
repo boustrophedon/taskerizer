@@ -7,8 +7,6 @@ fn main() {
     let args = commands::TKZArgs::get_args();
     let cmd = args.cmd();
 
-    println!("{:?}", cmd);
-
     let config = Config {
         db_path: PathBuf::from("/tmp/tkzr")
     };
