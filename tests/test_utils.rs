@@ -25,7 +25,7 @@ pub fn temp_config() -> (TempDir, Config) {
 }
 
 pub fn example_add_cmd1() -> TKZArgs {
-    let task = vec!["hello", "this", "is", "a task"].into_iter().map(From::from).collect();
+    let task = "hello this is a task".to_string();
     TKZArgs {
         cmd: Some(TKZCmd::Add( Add {
             reward: false,
@@ -36,7 +36,7 @@ pub fn example_add_cmd1() -> TKZArgs {
 }
 
 pub fn example_add_cmd2() -> TKZArgs {
-    let task = vec!["yo", "this", "is", "another", "task"].into_iter().map(From::from).collect();
+    let task = "yo this is another task".to_string();
     TKZArgs {
         cmd: Some(TKZCmd::Add( Add {
             reward: true,

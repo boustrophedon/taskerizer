@@ -1,5 +1,4 @@
 current todo:
-	- change ordering of command line argument so task is first and must be in quotes, and priority is optional maybe?
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
@@ -35,6 +34,15 @@ test and implement config parsing:
 	- Default::default impl if failure to read or file does not exist
 	- maybe add command line options at some point to select directory
 	- deserialize config
+
+implement Task::from_parts and maybe make fields private and add getters
+
+related: improve command line argument testing:
+	- use assert_cmd/assert_cli to test clap/structopt validators
+		- esp. add validators, currently it is being tested via an additional panic inside the add
+		- panics can be removed if we have the ability to err on task creation
+		- then we can just go back to original strategy of checking that TKZCmd::dispatch/Add::run returns the correct err
+		- still somewhat unsatisfying since we're testing the same behavior in multiple places (in the command line parser, the dispatch/run function, and the task constructor)
 
 improve error messages:
 	- make custom fail types

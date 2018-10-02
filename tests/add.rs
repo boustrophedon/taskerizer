@@ -9,12 +9,15 @@ use commands::Add;
 
 // TODO some setup code here is shared with the inner unit tests, maybe find a way to dedup
 
+// TODO see commands/add.rs this test and test below will be obviated when we write
+// Task::from_parts().
 #[test]
+#[should_panic(expected = "Task description cannot be empty.")]
 fn test_cmd_add_empty() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command with empty task
-    let task = Vec::new();
+    let task = String::new();
     let args = TKZArgs {
         cmd: Some(TKZCmd::Add( Add {
             reward: false,
@@ -23,22 +26,17 @@ fn test_cmd_add_empty() {
         }))
     };
 
-    let res = args.cmd().dispatch(&cfg);
-
-    // -- check failure
-    assert!(res.is_err(), "Add command incorrectly succeded: {:?}", res.unwrap());
-
-    // -- check failure was due to empty task
-    let err = res.unwrap_err();
-    assert!(err.to_string() == "Task cannot be empty.", "Incorrect error message: {}", err);
+    // this will panic
+    let _ = args.cmd().dispatch(&cfg);
 }
 
 #[test]
+#[should_panic(expected = "Task priority cannot be zero.")]
 fn test_cmd_add_priority_0() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command with priority 0
-    let task = vec!["hello", "this", "is", "a task"].into_iter().map(From::from).collect();
+    let task = "test".to_string();
     let args = TKZArgs {
         cmd: Some(TKZCmd::Add( Add {
             reward: false,
@@ -46,14 +44,9 @@ fn test_cmd_add_priority_0() {
             task: task,
         }))
     };
-    let res = args.cmd().dispatch(&cfg);
 
-    // -- check failure
-    assert!(res.is_err(), "Add command incorrectly succeded: {:?}", res.unwrap());
-
-    // -- check failure was due to 0 priority
-    let err = res.unwrap_err();
-    assert!(err.to_string() == "Task cannot have priority 0 since it will never be selected.", "Incorrect error message: {}", err);
+    // this will panic
+    let _ = args.cmd().dispatch(&cfg);
 }
 
 #[test]
