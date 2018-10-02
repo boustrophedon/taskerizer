@@ -1,5 +1,5 @@
 current todo:
-	- use structopt default_value option instead Option<TKZCmd> in TKZArgs
+	- change ordering of command line argument so task is first and must be in quotes, and priority is optional maybe?
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
