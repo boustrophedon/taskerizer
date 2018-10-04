@@ -207,7 +207,7 @@ so really we could have different renders for each of the outputs of the command
 
 but really they're all going to output the same type (a list of strings to print out, a widget tree, whatever ncurses does, or whatever)
 
---
+---
 
 could make taskerizer per-project by putting it in a dotfile in the current directory.
 
@@ -325,3 +325,21 @@ essentially the problem is that I have
 foo(input) and test_foo_bad_input()
 
 but now I also have bar(input) {... foo(input)? ...} and I want to make sure that bar(bad_input) is returning an error. which is just duplicating the code in test_foo_bad_input()
+
+---
+
+solution for "when to update current task": just do it every time. after running TKZCmd::dispatch, if no error occurred, run an "update current" function that checks if there is no current task and chooses a new one.
+
+to test, do things as above: 
+
+add -> check current
+add+ -> check current is the first one added
+
+add complete add -> check current
+add complete -> check no error on complete, check no current
+add complete add+ -> check current is the one added directly after complete
+
+similar for skip,
+add skip -> check current is same as before skip
+add add skip -> TODO should skip refuse to use the same one twice? nah
+skip -> check no err, check no current
