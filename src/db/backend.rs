@@ -72,9 +72,9 @@ impl DBBackend for SqliteBackend {
     fn add_task(&self, task: &Task) -> Result<(), Error> {
         self.connection.execute_named(
             "INSERT INTO tasks (task, priority, category) VALUES (:task, :priority, :category)",
-            &[(":task", &task.task),
-              (":priority", &task.priority),
-              (":category", &task.reward)
+            &[(":task", &task.task()),
+              (":priority", &task.priority()),
+              (":category", &task.is_break())
             ],
         ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
 
@@ -232,11 +232,11 @@ fn select_task(p: f32, tasks: &[(i32, Task)]) -> i32 {
 
     // TODO we convert the u32 into f32 to get around overflow issues but we could handle it
     // better
-    let total_priority = tasks.iter().fold(0f32, |acc, (_, task)| acc + task.priority as f32);
+    let total_priority = tasks.iter().fold(0f32, |acc, (_, task)| acc + task.priority() as f32);
 
     let mut current_interval = 0.0;
     for (id, task) in tasks {
-        current_interval += task.priority as f32/total_priority;
+        current_interval += task.priority() as f32/total_priority;
         if p <= current_interval {
             return *id;
         }
@@ -277,7 +277,7 @@ mod select_tests {
 
     fn assert_select_in_order(tasks: &[(i32, Task)]) {
         // kind of ugly test because we're duplicating a computation inside the actual function
-        let total_priority = tasks.iter().fold(0, |acc, (_, task)| acc + task.priority) as f32;
+        let total_priority = tasks.iter().fold(0, |acc, (_, task)| acc + task.priority()) as f32;
         let min_sep = 1.0/total_priority/2.0;
 
         // walk through tasks by selecting them at an interval smaller than the smallest selection

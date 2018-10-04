@@ -18,7 +18,7 @@ impl Subcommand for List {
         let mut output = vec!["Item\tTask\tPriority".to_string(),];
         output.extend(
             tasks.iter().enumerate().map(|(i, task)| {
-                format!("{}\t{}\t{}", i+1, task.task, task.priority)
+                format!("{}\t{}\t{}", i+1, task.task(), task.priority())
             })
         );
 

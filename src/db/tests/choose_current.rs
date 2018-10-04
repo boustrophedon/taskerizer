@@ -81,7 +81,7 @@ proptest! {
         let mut has_task = false;
 
         for task in &tasks {
-            if task.reward {
+            if task.is_break() {
                 has_break = true;
             } else {
                 has_task = true;
