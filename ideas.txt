@@ -307,3 +307,21 @@ what i need to do is either:
 or go back and do the refactor first before the current changes that made the tests fail.
 
 even though the latter would be easier i think i'll do the former because it seems like more of a "real-life" situation, where the "go back before the tests fail" is not an option.
+
+---
+
+I wish I could specify failing input on my tests because when I change tests, usually what I do is put an early return in the function with bad output to make it fail after the change, then removing the early return to make the test pass. this makes me feel confident I didn't accidentally mess up the test when changing it.
+
+this is related to mutation testing.
+
+of course, you can argue that the compiler erroring is a form of failing tests, but i would feel better if the tests themselves actually failed as well
+
+---
+
+now that i'm at the point where I'm going to delete the tests that check "is an error from Task::from_parts being produced when I create a task with invalid parts from the input or from the database" I'm kind of uncertain whether I want to do it. like, if your code can produce an erroryou should probably test it, but at the same time *it's already being tested*
+
+essentially the problem is that I have
+
+foo(input) and test_foo_bad_input()
+
+but now I also have bar(input) {... foo(input)? ...} and I want to make sure that bar(bad_input) is returning an error. which is just duplicating the code in test_foo_bad_input()

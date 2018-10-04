@@ -1,4 +1,5 @@
 current todo:
+	- deduplicate task validation code in Add struct and Task::from_parts
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
