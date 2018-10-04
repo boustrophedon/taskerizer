@@ -272,3 +272,38 @@ probably return an error: if the end result of calling "choose a new task" doesn
 in the higher level code we can check if there are any tasks/breaks before actually calling choose new task. e.g. grey out the box. 
 
 in higher level code we're going to select task/break as a separate probability anyway. i.e. "if there are tasks and breaks / if there are tasks / if there are breaks / if neither" so we should always know beforehand anyway. therefore it should be an error.
+
+---
+
+using Task::from_parts at untrusted/io boundaries (user input, db retrieval) but now I have the problem of whether I want to test those conditions/code paths in those cases. I.e. do i want to write tests that check "if i put in the wrong input, I get the error from Task::from_parts" instead of leaving it to the fact that I'm using Task::from_parts
+
+I'm pretty sure the answer is yes, I do want to write those tests, because 1) i already have those should_panic tests in tests/add.rs and 2) if I remove the usage of Task::from_parts or change its implementation, and I'm only testing on good input, then there's no way to notice if something goes wrong.
+
+For the db part, I'm not really sure how good an idea it is to intentionally make a "corrupt" database for testing purposes, but in this specific case it isn't hard: I can make an invalid Task because its fields are public and add it to the database, but I also kind of want to make them non-public and only have getters and a constructor, which would mean that I would have to manually write a query to inject a bad Task, which is very fragile as a test. I guess I'll cross that bridge when I get there. 
+
+Actually, one option would be to add an `impl Task` inside the test cfg'd task::test_utils module that has functions which make invalid Tasks. I'm going to try that for the db "corruption" tests. Yes, it worked.
+
+---
+
+for some reason once I changed the prop tests to use non-zero-length strings, it generated a string with a null byte for the first time and that happens to not be allowed by rusqlite (because sqlite strings are null-terminated)
+
+maybe i should, just in general, only allow printable characters within task descriptions?
+
+i really don't like the idea of adding redundant tests for that in three more places (again, in the Task::from_parts tests, the commands::Add tests in tests/add.rs, and then in the db::tests)
+
+I think the best solution is probably to make the Task fields private and then only allow Tasks to be created via from_parts, which then is the only place that needs the tests because everywhere else is using already-valid Tasks.
+
+that should be fine because in the same way you don't write tests for other libraries' code when you use them, you don't write tests for other layers' code.
+
+to rebutt the points i made above about "if i remove the usage of task::from_parts or change its implementation, and i'm only testing on good input", the new thing that I'd be doing is that "if I have a Task, it is good input": I have/will have tests using bad input, but only for Task::from_parts, because that will be the only way to create a Task.
+
+so now Task is the single source of truth about what is and is not a valid task. 
+
+what i need to do is either:
+ - make the tests pass (probably by changing the input as a stop-gap)
+ - adding the null byte/non-printable character tests to Task
+ - refactor by making the fields private, and then deleting the duplicate tests in Add and db
+
+or go back and do the refactor first before the current changes that made the tests fail.
+
+even though the latter would be easier i think i'll do the former because it seems like more of a "real-life" situation, where the "go back before the tests fail" is not an option.

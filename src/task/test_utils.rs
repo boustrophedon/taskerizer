@@ -54,10 +54,32 @@ pub fn example_task_list() -> Vec<Task> {
     ]
 }
 
+// invalid tasks, impl'd directly on Task so that they can be used if/when we make the Task fields
+// private
+
+impl Task {
+    pub fn example_invalid_empty_desc() -> Task {
+        Task {
+            task: "".to_string(),
+            priority: 1,
+            reward: false,
+        }
+    }
+
+    pub fn example_invalid_zero_priority() -> Task {
+        Task {
+            task: "test task".to_string(),
+            priority: 0,
+            reward: true,
+        }
+    }
+}
+
+
 // proptest gen functions
 
 prop_compose! {
-    [pub] fn arb_task()(task in any::<String>(),
+    [pub] fn arb_task()(task in "[^\x00]+",
                   priority in 1u32..,
                   reward in any::<bool>()) -> Task {
         Task {
@@ -69,7 +91,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    [pub] fn arb_task_bounded()(task in ".{0,50}",
+    [pub] fn arb_task_bounded()(task in "[^\x00]{1,50}",
                   priority in 1..100u32,
                   reward in any::<bool>()) -> Task {
         Task {

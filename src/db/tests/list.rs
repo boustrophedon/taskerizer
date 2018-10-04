@@ -2,6 +2,7 @@ use db::DBBackend;
 
 use super::open_test_db;
 
+use task::Task;
 use task::test_utils::{example_task_list, arb_task_list};
 
 #[test]
@@ -16,6 +17,35 @@ fn test_db_list_empty() {
     // check nothing was returned
     assert_eq!(db_tasks.len(), 0);
 }
+
+#[test]
+fn test_db_list_invalid_task_empty() {
+    let db = open_test_db();
+
+    let task = Task::example_invalid_empty_desc();
+    db.add_task(&task).expect("Adding task failed");
+
+    let res = db.get_all_tasks();
+    assert!(res.is_err(), "No error when trying to deserialize invalid task: {:?}", res);
+
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("Empty task description"), "Reading invalid task has incorrect error message: {}", err);
+}
+
+#[test]
+fn test_db_list_invalid_task_zero_priority() {
+    let db = open_test_db();
+
+    let task = Task::example_invalid_zero_priority();
+    db.add_task(&task).expect("Adding task failed");
+
+    let res = db.get_all_tasks();
+    assert!(res.is_err(), "No error when trying to deserialize invalid task: {:?}", res);
+
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("Zero priority"), "Reading invalid task has incorrect error message: {}", err);
+}
+
 
 #[test]
 fn test_db_list_added_manually() {

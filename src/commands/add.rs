@@ -48,14 +48,8 @@ pub struct Add {
 
 impl Subcommand for Add {
     fn run(&self, db: &impl DBBackend) -> Result<Vec<String>, Error> {
-        assert!(self.task.len() > 0, "Task description cannot be empty.");
-        assert!(self.priority > 0, "Task priority cannot be zero.");
-
-        let task = Task {
-            task: self.task.clone(),
-            reward: self.reward,
-            priority: self.priority,
-        };
+        let task = Task::from_parts(self.task.clone(), self.priority, self.reward)
+            .map_err(|e| format_err!("Task input was invalid: {}", e))?;
 
         db.add_task(&task)
             .map_err(|e| format_err!("Could not add task to database. {}", e))?;

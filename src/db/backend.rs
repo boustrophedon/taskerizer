@@ -94,16 +94,13 @@ impl DBBackend for SqliteBackend {
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(&[], |row| {
-                Task {
-                    task: row.get(0),
-                    priority: row.get(1),
-                    reward: row.get(2)
-                }
+                Task::from_parts(row.get(0), row.get(1), row.get(2))
              })
             .map_err(|e| format_err!("Error executing task list query: {}", e))?;
 
-        for task_res in rows {
-            let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+        for row_res in rows {
+            let task_res = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
             tasks.push(task);
         }
 
@@ -142,17 +139,15 @@ impl DBBackend for SqliteBackend {
 
             let rows = stmt.query_map(&[&reward], |row| {
                     (row.get(0), // id
-                    Task {
-                        task: row.get(1),
-                        priority: row.get(2),
-                        reward: row.get(3)
-                    })
+                    Task::from_parts(row.get(1), row.get(2), row.get(3))
+                    )
                  })
                 .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
 
-            for task_res in rows {
-                let task = task_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-                tasks.push(task);
+            for row_res in rows {
+                let (task_id, task_res) = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+                let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
+                tasks.push((task_id, task));
             }
 
             if tasks.len() == 0 {
@@ -192,12 +187,9 @@ impl DBBackend for SqliteBackend {
             ")
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
-        let mut rows: Vec<SQLResult<Task>> = stmt.query_map(&[], |row| {
-                Task {
-                    task: row.get(0),
-                    priority: row.get(1),
-                    reward: row.get(2)
-                }
+        // TODO there should probably be a better way to do this.
+        let mut rows: Vec<SQLResult<Result<Task, Error>>> = stmt.query_map(&[], |row| {
+                Task::from_parts(row.get(0), row.get(1), row.get(2))
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?
             .collect();
@@ -212,7 +204,8 @@ impl DBBackend for SqliteBackend {
 
         // unwrap is fine, we check that there is one element directly above
         let current_task = rows.pop().unwrap()
-            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?
+            .map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
 
         Ok(Some(current_task))
     }

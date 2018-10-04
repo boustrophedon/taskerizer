@@ -7,13 +7,10 @@ use commands::{TKZArgs, TKZCmd};
 
 use commands::Add;
 
-// TODO some setup code here is shared with the inner unit tests, maybe find a way to dedup
+// TODO some task example data and test code here is shared with the inner unit tests, maybe find a way to dedup
 
-// TODO see commands/add.rs this test and test below will be obviated when we write
-// Task::from_parts().
 #[test]
-#[should_panic(expected = "Task description cannot be empty.")]
-fn test_cmd_add_empty() {
+fn test_cmd_add_empty_task() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command with empty task
@@ -26,12 +23,14 @@ fn test_cmd_add_empty() {
         }))
     };
 
-    // this will panic
-    let _ = args.cmd().dispatch(&cfg);
+    let res = args.cmd().dispatch(&cfg);
+    assert!(res.is_err(), "Add command incorrectly succeeded with invalid input: {:?}", res.unwrap());
+
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("Empty task description"), "Incorrect error message with invalid input: {}", err);
 }
 
 #[test]
-#[should_panic(expected = "Task priority cannot be zero.")]
 fn test_cmd_add_priority_0() {
     let (_dir, cfg) = test_utils::temp_config();
 
@@ -45,8 +44,11 @@ fn test_cmd_add_priority_0() {
         }))
     };
 
-    // this will panic
-    let _ = args.cmd().dispatch(&cfg);
+    let res = args.cmd().dispatch(&cfg);
+    assert!(res.is_err(), "Add command incorrectly succeeded with invalid input: {:?}", res.unwrap());
+
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("Zero priority"), "Incorrect error message with invalid input: {}", err);
 }
 
 #[test]

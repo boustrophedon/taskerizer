@@ -1,7 +1,7 @@
 use failure::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Task representation. Priority must not be 0.
+/// Task representation. Priority must not be 0 and task description must not be empty.
 pub struct Task {
     pub task: String,
     pub priority: u32,
