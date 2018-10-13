@@ -44,12 +44,51 @@ impl Task {
     pub fn is_break(&self) -> bool {
         self.reward
     }
+
+    /// Format a `Task` into a single-line string
+    pub fn format_row(&self, priority_column_width: usize) -> String {
+        format!("{:>width$} \t {}", self.priority, self.task,
+                width = priority_column_width,
+        ).to_string()
+    }
+
+    /*
+    /// Format a `Task` into a multiple-line string
+    pub fn format_long(&self) -> String {
+    }
+    */
 }
 
 #[cfg(test)]
 mod test {
     use super::Task;
     use proptest::arbitrary::any;
+
+    #[test]
+    fn test_task_fmt_row_1() {
+        let task = super::test_utils::example_task_1();
+        let row = task.format_row(1);
+        assert_eq!(row, "1 \t test task please ignore");
+
+        let row = task.format_row(2);
+        assert_eq!(row, " 1 \t test task please ignore");
+
+        let row = task.format_row(4);
+        assert_eq!(row, "   1 \t test task please ignore");
+    }
+
+    #[test]
+    fn test_task_fmt_row_2() {
+        let task = super::test_utils::example_task_2();
+        let row = task.format_row(1);
+        assert_eq!(row, "12 \t test task please ignore 2");
+
+        let row = task.format_row(2);
+        assert_eq!(row, "12 \t test task please ignore 2");
+
+        let row = task.format_row(4);
+        assert_eq!(row, "  12 \t test task please ignore 2");
+    }
 
     #[test]
     fn test_task_nonempty_task() {
