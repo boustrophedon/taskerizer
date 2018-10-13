@@ -45,6 +45,13 @@ impl Task {
         self.reward
     }
 
+    pub fn category_str(&self) -> &str {
+        match self.reward {
+            true => "Break",
+            false => "Task",
+        }
+    }
+
     /// Format a `Task` into a single-line string
     pub fn format_row(&self, priority_column_width: usize) -> String {
         format!("{:>width$} \t {}", self.priority, self.task,
@@ -52,11 +59,14 @@ impl Task {
         ).to_string()
     }
 
-    /*
     /// Format a `Task` into a multiple-line string
     pub fn format_long(&self) -> String {
+        format!("Task: {}\n\
+            Priority: {}\n\
+            Category: {}",
+            self.task, self.priority, self.category_str())
+            .to_string()
     }
-    */
 }
 
 #[cfg(test)]
@@ -88,6 +98,33 @@ mod test {
 
         let row = task.format_row(4);
         assert_eq!(row, "  12 \t test task please ignore 2");
+    }
+
+    #[test]
+    fn test_task_fmt_long_1() {
+        let task = super::test_utils::example_task_1();
+        let long = task.format_long();
+        assert_eq!(long, "Task: test task please ignore\n\
+        Priority: 1\n\
+        Category: Task")
+    }
+
+    #[test]
+    fn test_task_fmt_long_2() {
+        let task = super::test_utils::example_task_3();
+        let long = task.format_long();
+        assert_eq!(long, "Task: just another task\n\
+        Priority: 2\n\
+        Category: Task")
+    }
+
+    #[test]
+    fn test_task_fmt_long_3() {
+        let task = super::test_utils::example_task_break_2();
+        let long = task.format_long();
+        assert_eq!(long, "Task: break with high priority\n\
+        Priority: 99\n\
+        Category: Break")
     }
 
     #[test]
