@@ -27,8 +27,8 @@ fn test_cmd_list() {
     // -- check output has exactly the task we previously added
     let output = res.unwrap();
     let expected = vec![
-        "Item\tTask\tPriority".to_string(),
-        "1\thello this is a task\t1".to_string(),
+        "Priority \t Task".to_string(),
+        "   1 \t hello this is a task".to_string(),
     ];
     assert_eq!(output, expected);
 
@@ -61,9 +61,9 @@ fn test_cmd_list_two() {
     // -- assert output has both tasks we previously added
     let output = res.unwrap();
     let expected = vec![
-        "Item\tTask\tPriority".to_string(),
-        "1\thello this is a task\t1".to_string(),
-        "2\tyo this is another task\t4".to_string(),
+        "Priority \t Task".to_string(),
+        "   1 \t hello this is a task".to_string(),
+        "   4 \t yo this is another task".to_string(),
     ];
     assert_eq!(output, expected);
 

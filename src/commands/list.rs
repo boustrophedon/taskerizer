@@ -14,11 +14,10 @@ impl Subcommand for List {
         let tasks = db.get_all_tasks()
             .map_err(|e| format_err!("Could not get tasks from database. {}", e))?;
 
-        // TODO implement `Task::format_row`, `Task::description` instead of doing it inline here
-        let mut output = vec!["Item\tTask\tPriority".to_string(),];
+        let mut output = vec!["Priority \t Task".to_string(),];
         output.extend(
-            tasks.iter().enumerate().map(|(i, task)| {
-                format!("{}\t{}\t{}", i+1, task.task(), task.priority())
+            tasks.iter().map(|task| {
+                task.format_row(4)
             })
         );
 
