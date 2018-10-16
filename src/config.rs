@@ -4,9 +4,14 @@ use failure::Error;
 
 use db::{DBBackend, make_sqlite_backend};
 
+/// Configuration parameters.
 pub struct Config {
+    /// Location of the database directory.
     pub db_path: PathBuf,
+    /// The probability of choosing a break when choosing a new task.
+    pub break_cutoff: f32,
 }
+
 impl Config {
     /// Get a connection to the database at the location specified by the config file.
     pub fn db(&self) -> Result<impl DBBackend, Error> {

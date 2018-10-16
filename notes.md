@@ -343,3 +343,30 @@ similar for skip,
 add skip -> check current is same as before skip
 add add skip -> TODO should skip refuse to use the same one twice? nah
 skip -> check no err, check no current
+
+---
+
+I realized that having the Subcommand trait is actually useful because it is not a public trait, so that even though the subcommands and all their fields have to be public (though maybe they don't), you can't accidentally call just the Subcommand::run by itself (or accidentally make the run command public), which would potentially disrupt any invariants maintained by TKZCmd::dispatch (specifically, that if there is no current task, we choose one)
+
+---
+
+probably need to get rid of the `make_sqlite_backend` function and just use SqliteBackend directly. maybe even get rid of dbbackend trait since i'm not using mocks or anything. maybe if sqlite didn't have an inmemory version it would have been useful.
+
+---
+
+regarding the tests in `commands/test_dispatch.rs`:
+I think these tests probably belong here, but I'm not sure. I want to test the invariants
+promised by dispatch, which so far is really just that "if there is at least one task, there
+should be a current task". See L330 in notes.md.
+
+The tests in tkzr/tests/ are more like system tests that check that the output is correct. The
+tests here are more like integration tests specifically for the piece of logic that says "after
+we've done an operation, make sure that a task is chosen".  Similarly, if we were to add code
+that says "after we've done an operation and chosen a new task, try to sync that with a remote
+server", we might try to test that here as well.
+
+The thing is that except for the fact that we can't query the database from the system tests in
+tests/, these tests could also be written just by executing Add and then Current commands and
+testing that the output is correct. But we don't really want to test "the output is correct", we
+want to test "the database has the correct current task". Actually, the "execute Add and then
+Current commands" tests will be precisely the tests inside tests/current.rs.

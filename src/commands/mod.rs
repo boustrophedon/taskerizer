@@ -5,6 +5,9 @@ use structopt::StructOpt;
 use db::DBBackend;
 use config::Config;
 
+use rand::prelude::*;
+use rand::distributions::Uniform;
+
 /// Default command when none is given: display the current selected task.
 const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
 
@@ -75,19 +78,68 @@ pub enum TKZCmd {
 impl TKZCmd {
     pub fn dispatch(&self, config: &Config) -> Result<Vec<String>, Error> {
         let mut db = config.db()?;
+        let break_cutoff = config.break_cutoff;
         // get other stuff from config, etc...
 
-        return self.run_cmd(&mut db);
+        // choose random parameters for choose_current_task
+        let mut rng = thread_rng();
+        let task_p = Uniform::new_inclusive(0.0, 1.0).sample(&mut rng);
+        let category_p = Uniform::new_inclusive(0.0, 1.0).sample(&mut rng);
+
+        return self.run(&mut db, (task_p, category_p, break_cutoff));
     }
 
-    fn run_cmd(&self, db: &mut impl DBBackend) -> Result<Vec<String>, Error> {
-        match self {
+    fn run(&self, db: &mut impl DBBackend, choose_current_params: (f32, f32, f32)) -> Result<Vec<String>, Error> {
+        let output = match self {
             TKZCmd::Add(add) => add.run(db),
             TKZCmd::List => {let l = List; l.run(db)},
             _ => unimplemented!(),
+        };
+
+        // if there is a current task, we don't have to update, just return the output.
+        let current_task = db.get_current_task()
+            .map_err(|err| format_err!("Error getting current task while choosing new task after executing command: {}", err))?;
+        if current_task.is_some() {
+            return output;
         }
+        // otherwise, choose new one
+
+        // TODO: refactor into separate choose_selection_category
+
+        let (task_p, category_p, break_cutoff) = choose_current_params;
+
+        let tasks = db.get_all_tasks()
+            .map_err(|err| format_err!("Failed to get tasks while choosing new task after executing command: {}", err))?;
+        let num_breaks = tasks.iter().filter(|&t| t.is_break()).count();
+        let num_tasks = tasks.len() - num_breaks;
+
+        let mut choose_break = None;
+        // if there are tasks of both kinds, use the passed probability to choose which category to
+        // use:
+        if num_breaks > 0 && num_tasks > 0 {
+            choose_break = Some(category_p < break_cutoff);
+        }
+        // otherwise, just use whichever we have
+        else if num_breaks > 0 {
+            choose_break = Some(true);
+        }
+        else if num_tasks > 0 {
+            choose_break = Some(false);
+        }
+
+        if let Some(is_break) = choose_break {
+            db.choose_current_task(task_p, is_break)
+                .map_err(|err| format_err!("Failed to choose new task after executing command: {}", err))?;
+        }
+
+        return output;
     }
 }
+
+#[cfg(test)]
+pub mod test_utils;
+#[cfg(test)]
+mod test_dispatch;
 
 // --- subcommand parameter structs
 

@@ -5,6 +5,8 @@ extern crate rusqlite;
 extern crate structopt;
 extern crate chrono;
 
+extern crate rand;
+
 #[cfg(test)]
 #[macro_use]
 extern crate proptest;

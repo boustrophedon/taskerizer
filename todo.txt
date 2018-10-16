@@ -1,5 +1,7 @@
 current todo:
 	- Update current task at end of dispatch if there is no current one
+		- refactor the implementation, take out the "check how many of each task there are" logic, add optimized db count operations for each category
+	- map_err on create table calls in db::SqliteBackend::create_tables
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever

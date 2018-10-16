@@ -12,7 +12,7 @@ structopt = "0.2"
 failure = "0.1"
 rusqlite = { version = "0.14", features = ["chrono", "bundled"] }
 chrono = "0.4"
-
+rand = "0.5"
 
 [dev-dependencies]
 proptest = "0.8"

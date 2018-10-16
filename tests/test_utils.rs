@@ -19,6 +19,7 @@ pub fn temp_config() -> (TempDir, Config) {
 
     let cfg = Config {
         db_path: db_path,
+        break_cutoff: 0.33,
     };
 
     (test_dir, cfg)

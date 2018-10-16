@@ -8,7 +8,8 @@ fn main() {
     let cmd = args.cmd();
 
     let config = Config {
-        db_path: PathBuf::from("/tmp/tkzr")
+        db_path: PathBuf::from("/tmp/tkzr"),
+        break_cutoff: 0.33,
     };
 
     match cmd.dispatch(&config) {
