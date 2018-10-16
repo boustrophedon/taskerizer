@@ -10,7 +10,7 @@ use db::{SqliteBackend, DBBackend};
 
 /// Open an in-memory db for testing. If the environment variable `TKZR_TEST_SAVE_DB` is set, the
 /// db used for this test is saved on disk into `/tmp/tkzr/test` and the directory is printed at runtime.
-fn open_test_db() -> SqliteBackend {
+pub fn open_test_db() -> SqliteBackend {
     let res = match env::var("TKZR_TEST_SAVE_DB") {
         Ok(_) => {
             // the into_path() call "leaks" the tempdir so it is not deleted
@@ -30,7 +30,7 @@ fn open_test_db() -> SqliteBackend {
 
 /// Opens an on-disk database for testing
 /// Returns the TempDir so that it does not go out of scope and delete the database file
-fn open_test_db_on_disk() -> (SqliteBackend, TempDir) {
+pub fn open_test_db_on_disk() -> (SqliteBackend, TempDir) {
     let test_dir = tempdir().expect("temporary directory could not be created");
  
     let res = SqliteBackend::open(&test_dir);
