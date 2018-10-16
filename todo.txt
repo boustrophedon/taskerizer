@@ -1,6 +1,5 @@
 current todo:
-	- implement Task::format_long
-		- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
+	- Update current task at end of dispatch if there is no current one
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
@@ -15,6 +14,9 @@ implement database operations:
 	- write test for that operation
 	- implement operation
 	- refactor, iterate
+
+implement Task::format_long
+	- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
 
 deduplicate task validation code in Add struct and Task::from_parts
 
