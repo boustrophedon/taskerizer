@@ -1,3 +1,7 @@
+// dead code allowed because we don't use every example in every test, but each test gets compiled
+// separately
+#![allow(dead_code)]
+
 extern crate tempfile;
 
 extern crate taskerizer_prototype as tkzr;
@@ -5,7 +9,7 @@ extern crate taskerizer_prototype as tkzr;
 use self::tempfile::{tempdir, TempDir};
 
 use tkzr::commands::{TKZArgs, TKZCmd};
-use tkzr::commands::Add;
+use tkzr::commands::{Add, Current};
 
 use tkzr::config::Config;
 
@@ -44,5 +48,21 @@ pub fn example_add_cmd2() -> TKZArgs {
             priority: 4,
             task: task,
         }))
+    }
+}
+
+pub fn example_current() -> TKZArgs {
+    TKZArgs {
+        cmd: Some(TKZCmd::Current( Current {
+            top: false
+        })),
+    }
+}
+
+pub fn example_current_top() -> TKZArgs {
+    TKZArgs {
+        cmd: Some(TKZCmd::Current( Current {
+            top: true
+        })),
     }
 }

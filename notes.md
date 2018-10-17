@@ -328,6 +328,18 @@ but now I also have bar(input) {... foo(input)? ...} and I want to make sure tha
 
 ---
 
+how deterministic is the current function? if we do Add, Current, Add, should we always get the same result as doing Add, Add, Current?
+
+this only happens either when we start from an empty state, or when we do Complete Add\* Current - is the task added after complete a possible result when we see current? what is natural?
+
+when I do complete, do I expect a new one to be chosen immediately? well, what if I do a list command? it might want to indicate in some way the current value?
+
+what about on a mobile app? if I'm on a screen that shows the current task with a big "complete" button, and i hit the button, I expect it to immediately appear. so I think a new task should be chosen immediately upon completion. 
+
+that means that when we do the first add (or any add if we complete all tasks) we have to check if there is a current.
+
+---
+
 solution for "when to update current task": just do it every time. after running TKZCmd::dispatch, if no error occurred, run an "update current" function that checks if there is no current task and chooses a new one.
 
 to test, do things as above: 
@@ -343,6 +355,10 @@ similar for skip,
 add skip -> check current is same as before skip
 add add skip -> TODO should skip refuse to use the same one twice? nah
 skip -> check no err, check no current
+
+---
+
+Even less convinced of the need for the Subcommand trait in commands/mod.rs given that only some of the commands need the db to be mutable. (specifically, the ones that use choose_current_task, which needs a mutable ref because the transaction api of rusqlite needs one)
 
 ---
 
@@ -370,3 +386,22 @@ tests/, these tests could also be written just by executing Add and then Current
 testing that the output is correct. But we don't really want to test "the output is correct", we
 want to test "the database has the correct current task". Actually, the "execute Add and then
 Current commands" tests will be precisely the tests inside tests/current.rs.
+
+---
+
+fuzz the commands (not command line input, the stuff in commands/) to make sure operations maintain invariants? might be easier to fuzz/proptest db operations
+
+probably should just proptest db operations more thoroughly
+
+- list never changes the database
+- adding tasks never changes current task
+- completing a task only removes one task
+- changing break probability... only changes the break probability
+
+these are mostly "operation X is isolated from tables A, B, C" etc
+	- it would be cool to encode that in the type system but at that point you're basically making an ORM
+		- eg you would first get a "&mut Tasks" which represents the tasks table, so that you can't mutate the current table
+		- or you would get a "&Current"
+		- then you would perform the operations (like get_all_tasks or get_current_tasks) on those objects instead of the database in general
+		- they would still probably need to be tested the same way (i.e. when you have a &Table and a &Table2 you can't change the values in &Table2 with the &Table) so i'm not sure you would gain anything
+		- if you added this feature to an orm maybe you wouldn't have to write *as many* tests - you'd only have to write them once for the orm and then the type system could guarantee it the rest of the time

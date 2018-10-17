@@ -93,6 +93,7 @@ impl TKZCmd {
         let output = match self {
             TKZCmd::Add(add) => add.run(db),
             TKZCmd::List => {let l = List; l.run(db)},
+            TKZCmd::Current(current) => current.run(db),
             _ => unimplemented!(),
         };
 
@@ -149,6 +150,9 @@ pub use self::add::Add;
 mod list;
 pub use self::list::List;
 
+mod current;
+pub use self::current::Current;
+
 #[derive(StructOpt, Debug)]
 pub struct Break {
     /// The probability as a decimal to select a task from break. Must be less than 1.0.
@@ -168,15 +172,6 @@ fn parse_prob(arg: &str) -> Result<f32, Error> {
 
     Ok(p)
 }
-
-
-#[derive(StructOpt, Debug)]
-pub struct Current {
-    #[structopt(long = "top")]
-    /// Displays the task with the highest priority instead of the currently selected task
-    pub top: bool,
-}
-
 
 #[derive(StructOpt, Debug)]
 pub struct Skip {
