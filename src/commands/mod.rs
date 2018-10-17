@@ -14,7 +14,7 @@ const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
 // subcommand trait
 
 trait Subcommand {
-    fn run(&self, config: &impl DBBackend) -> Result<Vec<String>, Error>;
+    fn run(&self, db: &mut impl DBBackend) -> Result<Vec<String>, Error>;
 }
 
 #[derive(StructOpt, Debug)]
