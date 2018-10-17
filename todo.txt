@@ -1,20 +1,17 @@
 current todo:
-	- Update current task at end of dispatch if there is no current one
-		- refactor the implementation, take out the "check how many of each task there are" logic, add optimized db count operations for each category
 	- map_err on create table calls in db::SqliteBackend::create_tables
+	- refactor the "choose new current" implementation in TKZCmd::run
+		- lift out the "check how many of each task there are" logic
+		- add optimized db count operations for each category
 	- implement Task::format_long
-		- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
-	- implement frontend for current
-		- display current task in list with asterisk or something
-		- determine whether to select current in add or current or whatever
-			- i think it's probably simpler if we only choose the current task when the current command is run
-			- it does mean that if we run list then there might not be a current task selected
+		-  use format_long for output of current task etc, anywhere we output "the current task is now: {format_long}"
+	- display current task in output of list command with asterisk or something
 
 implement database operations:
 	- decide which operation to implement next
-		- Break: set break probability
 		- Complete: mark task as complete
 		- Skip: skip current task
+		- current --top should show task with highest priority
 	- write test for that operation
 	- implement operation
 	- refactor, iterate
