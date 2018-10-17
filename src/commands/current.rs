@@ -25,10 +25,10 @@ impl Subcommand for Current {
             .map_err(|e| format_err!("Could not get current task from database. {}", e))?;
        
         if let Some(current) = res {
-            return Ok(vec!["Current task:\n".to_string(),
+            return Ok(vec![
+                      format!("{}\n", current.task()),
                       format!("Category: {}", format_category(&current)),
                       format!("Priority: {}", current.priority().to_string()),
-                      format!("Description: {}", current.task()),
             ]);
         }
         else {

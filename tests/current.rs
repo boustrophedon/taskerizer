@@ -45,10 +45,9 @@ fn test_cmd_current_1() {
 
     // TODO implement to_string (or format_*, see todo.txt) for Task and fix it here
     let expected = vec![
-        "Current task:\n".to_string(),
+        format!("{}\n", "hello this is a task"),
         "Category: Task".to_string(),
         "Priority: 1".to_string(),
-        format!("Description: {}", "hello this is a task")
     ];
 
     assert_eq!(output, expected);
@@ -75,10 +74,9 @@ fn test_cmd_current_2() {
 
     // TODO implement to_string (or format_*, see todo.txt) for Task and fix it here
     let expected = vec![
-        "Current task:\n".to_string(),
+        format!("{}\n", "yo this is another task"),
         "Category: Break".to_string(),
         "Priority: 4".to_string(),
-        format!("Description: {}", "yo this is another task")
     ];
 
     assert_eq!(output, expected);
@@ -105,10 +103,9 @@ fn test_cmd_current_3_interspersed() {
 
     // TODO implement to_string (or format_*, see todo.txt) for Task and fix it here
     let expected = vec![
-        "Current task:\n".to_string(),
+        format!("{}\n", "yo this is another task"),
         "Category: Break".to_string(),
         "Priority: 4".to_string(),
-        format!("Description: {}", "yo this is another task")
     ];
 
     assert_eq!(output, expected);
@@ -133,10 +130,9 @@ fn test_cmd_current_3_interspersed() {
     let output = res.unwrap();
 
     let expected = vec![
-        "Current task:\n".to_string(),
+        format!("{}\n", "yo this is another task"),
         "Category: Break".to_string(),
         "Priority: 4".to_string(),
-        format!("Description: {}", "yo this is another task")
     ];
 
     assert_eq!(output, expected);

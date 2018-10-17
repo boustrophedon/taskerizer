@@ -2,6 +2,8 @@ current todo:
 	- Update current task at end of dispatch if there is no current one
 		- refactor the implementation, take out the "check how many of each task there are" logic, add optimized db count operations for each category
 	- map_err on create table calls in db::SqliteBackend::create_tables
+	- implement Task::format_long
+		- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
 	- implement frontend for current
 		- display current task in list with asterisk or something
 		- determine whether to select current in add or current or whatever
@@ -17,8 +19,8 @@ implement database operations:
 	- implement operation
 	- refactor, iterate
 
-implement Task::format_long
-	- format long for output of current task etc, anywhere we output "the current task is now: {format_long}"
+
+once we implement format_long, maybe use terminal codes to bold the task description or something
 
 deduplicate task validation code in Add struct and Task::from_parts
 
@@ -34,6 +36,7 @@ improve row output in list by counting number of digits and using that to choose
 	- actually just do l = [(10, 1), (100, 2), (1000,3),...] find first where x < l[i][0], return l[i][1]
 also improve row output by adding a cutoff length for task and putting ... at the end
 	- problems with this: "length" is in terms of columns, and while there is a "char::width" it is unstable. could just assume char::width==1 for now and count chars
+	- there's probably a crate that does this for me
 
 test and implement config parsing:
 	- pick config dir and file
