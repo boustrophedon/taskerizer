@@ -405,3 +405,7 @@ these are mostly "operation X is isolated from tables A, B, C" etc
 		- then you would perform the operations (like get_all_tasks or get_current_tasks) on those objects instead of the database in general
 		- they would still probably need to be tested the same way (i.e. when you have a &Table and a &Table2 you can't change the values in &Table2 with the &Table) so i'm not sure you would gain anything
 		- if you added this feature to an orm maybe you wouldn't have to write *as many* tests - you'd only have to write them once for the orm and then the type system could guarantee it the rest of the time
+
+---
+
+I should roll up the stuff in `TKZCmd::choose_new_current` back into `DBBackend::choose_current_task()`. in particular, I wouldn't have to implement a new db operation for counting the number of each task. 

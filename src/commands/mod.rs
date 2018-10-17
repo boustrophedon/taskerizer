@@ -97,18 +97,18 @@ impl TKZCmd {
             _ => unimplemented!(),
         };
 
-        // if there is a current task, we don't have to update, just return the output.
         let current_task = db.get_current_task()
             .map_err(|err| format_err!("Error getting current task while choosing new task after executing command: {}", err))?;
-        if current_task.is_some() {
-            return output;
+        // if there is no current task, choose a new one.
+        if current_task.is_none() {
+            let (task_p, category_p, break_cutoff) = choose_current_params;
+            self.choose_new_current(db, task_p, category_p, break_cutoff)?;
         }
-        // otherwise, choose new one
+        return output;
 
-        // TODO: refactor into separate choose_selection_category
+    }
 
-        let (task_p, category_p, break_cutoff) = choose_current_params;
-
+    fn choose_new_current(&self, db: &mut impl DBBackend, task_p: f32, category_p: f32, break_cutoff: f32) -> Result<(), Error> {
         let tasks = db.get_all_tasks()
             .map_err(|err| format_err!("Failed to get tasks while choosing new task after executing command: {}", err))?;
         let num_breaks = tasks.iter().filter(|&t| t.is_break()).count();
@@ -133,7 +133,7 @@ impl TKZCmd {
                 .map_err(|err| format_err!("Failed to choose new task after executing command: {}", err))?;
         }
 
-        return output;
+        Ok(())
     }
 }
 
