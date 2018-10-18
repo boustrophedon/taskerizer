@@ -409,3 +409,9 @@ these are mostly "operation X is isolated from tables A, B, C" etc
 ---
 
 I should roll up the stuff in `TKZCmd::choose_new_current` back into `DBBackend::choose_current_task()`. in particular, I wouldn't have to implement a new db operation for counting the number of each task. 
+
+---
+
+I think it would be good to look into using failure more clearly. The main thing is to make it so that I don't have to `Result::map_err` everything inline. it's basically giving me a backtrace via telling me the specific line or operation in which the failure occured now, but I'm doing it manually by writing descriptions. if instead I could write the description once for each error outside of the code, and then combine them into a single error type, that would be nice, and I think that is indeed what failure's Fail trait(?) provides.
+
+It seems specifically that the [context method](https://github.com/rust-lang-nursery/failure/blob/master/book/src/fail.md#context) is what I am talking about, but it's only slightly less verbose.
