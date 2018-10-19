@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use failure::Error;
 
-use db::{DBBackend, make_sqlite_backend};
+use db::SqliteBackend;
 
 /// Configuration parameters.
 pub struct Config {
@@ -14,8 +14,8 @@ pub struct Config {
 
 impl Config {
     /// Get a connection to the database at the location specified by the config file.
-    pub fn db<'a>(&'a self) -> Result<impl DBBackend + 'a, Error> {
-        return make_sqlite_backend(&self.db_path)
+    pub fn db(&self) -> Result<SqliteBackend, Error> {
+        return SqliteBackend::open(&self.db_path)
             .map_err(|e| format_err!("Could not acquire database connection. {}", e));
     }
 
