@@ -1,32 +1,31 @@
 current todo:
-	- map_err on create table calls in db::SqliteBackend::create_tables
-	- refactor the "choose new current" implementation in TKZCmd::run
-		- lift out the "check how many of each task there are" logic
-		- add optimized db count operations for each category
-	- implement Task::format_long
-		-  use format_long for output of current task etc, anywhere we output "the current task is now: {format_long}"
 	- display current task in output of list command with asterisk or something
 
 implement database operations:
 	- decide which operation to implement next
 		- Complete: mark task as complete
 		- Skip: skip current task
-		- current --top should show task with highest priority
-	- write test for that operation
-	- implement operation
-	- refactor, iterate
+	- refactor!!!
 
+** Add user auth struct to parameters for db.
+	- on local db it should be like 0 or whatever
+	- otherwise, we get it from a function like `DBBackend::auth_user(user_id: usize, user_pass: String) -> Result<Option(UserAuth), Error>` which returns Ok(Some(UserAuth)) if there were no errors and the auth was valid, or Ok(None) if the auth was not valid. and error if there's a db error.
+	- make sure that a valid UserAuth cannot be created by anything other than that function!!!
 
 once we implement format_long, maybe use terminal codes to bold the task description or something
 
 deduplicate task validation code in Add struct and Task::from_parts
 
-add ordering id to task in db:
-	- for selecting/mapping output lists to db items, use an explicit ordering column that preserves the invariant UNIQUE and also that there are no gaps. on delete, shift everything up, and by default it appends. in a mobile/web app you would also be able to reorder i guess. what if you want to list by priority? do you change the ordering? no. but maybe you want the ordering column to insert such that instead of appending, you insert after the smallest task with a greater than or equal priority, so that the ordering id always matches the priority sorted id. you could also achieve this by sorting after every update if the sort is stable (wrt the task string etc.)
-
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
 	- this makes tests somewhat fragile
+	- "specify explicitly" probably just means add tests that the existing output is the one we want
+
+test and implement config parsing:
+	- pick config dir and file
+	- Default::default impl if failure to read or file does not exist
+	- maybe add command line options at some point to select directory
+	- deserialize config
 
 improve row output in list by counting number of digits and using that to choose column width instead of using a hardcoded size
 	- literally could just write a function "if x < 10 return 1, else if x < 100 return 2, if x < 10000 return 3 [...] up to max u32"
@@ -35,11 +34,10 @@ also improve row output by adding a cutoff length for task and putting ... at th
 	- problems with this: "length" is in terms of columns, and while there is a "char::width" it is unstable. could just assume char::width==1 for now and count chars
 	- there's probably a crate that does this for me
 
-test and implement config parsing:
-	- pick config dir and file
-	- Default::default impl if failure to read or file does not exist
-	- maybe add command line options at some point to select directory
-	- deserialize config
+refactor the "choose new current" implementation in TKZCmd::run
+	- lift out the "check how many of each task there are" logic
+	- add optimized db count operations for each category
+
 
 related: improve command line argument testing:
 	- use assert_cmd/assert_cli to test clap/structopt validators
