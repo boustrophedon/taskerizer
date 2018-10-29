@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
-use rusqlite::Connection;
+use failure::Error;
+use rusqlite::{Connection, Transaction};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DBMetadata {
@@ -11,6 +12,22 @@ pub struct DBMetadata {
 pub struct SqliteBackend {
     connection: Connection,
 }
+
+pub struct SqliteTransaction<'conn> {
+    transaction: Transaction<'conn>,
+}
+
+impl SqliteBackend {
+    fn transaction<'conn>(&'conn mut self) -> Result<SqliteTransaction, Error> {
+        let tx = self.connection.transaction()
+            .map_err(|e| format_err!("Could not begin sqlite transaction: {}", e))?;
+
+        Ok(SqliteTransaction {
+            transaction: tx,
+        })
+    }
+}
+
 
 mod create;
 mod backend;
