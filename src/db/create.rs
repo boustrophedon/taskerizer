@@ -2,7 +2,7 @@ use std::path::Path;
 
 use chrono::Utc;
 use rusqlite::Connection;
-use failure::{Error, err_msg};
+use failure::Error;
 
 use db::SqliteBackend;
 
@@ -14,7 +14,8 @@ impl SqliteBackend {
         let mut path = path.as_ref().to_path_buf();
         
         if !path.is_dir() {
-            return Err(err_msg("Database directory path is not a directory, or we do not have permission to access it."))
+            return Err(format_err!("Database directory path \"{}\" is not a directory, or we do not have permission to access it.",
+                                   path.to_string_lossy()));
         }
 
         path.push("tkzr_sqlite3.db");
