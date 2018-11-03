@@ -6,7 +6,7 @@ use task::test_utils::{example_task_1, example_task_break_1, arb_task};
 
 #[test]
 fn test_db_add() {
-    let db = open_test_db();
+    let mut db = open_test_db();
 
     let task = example_task_1();
     let reward = example_task_break_1();
@@ -21,7 +21,7 @@ proptest! {
     #[test]
     fn test_db_add_arb(task1 in arb_task(),
                    task2 in arb_task()) {
-        let db = open_test_db();
+        let mut db = open_test_db();
 
         prop_assert!(db.add_task(&task1).is_ok(), "Adding task failed. task1: {:?}", task1);
         prop_assert!(db.add_task(&task2).is_ok(), "Adding task failed. task2: {:?}", task2);

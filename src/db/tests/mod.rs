@@ -69,7 +69,7 @@ fn test_db_metadata() {
     let after_creation = Utc::now();
 
     // open again and read metadata
-    let db = SqliteBackend::open(&dir).expect("opening database failed");
+    let mut db = SqliteBackend::open(&dir).expect("opening database failed");
     let metadata = db.metadata().expect("getting db metadata failed");
 
     let ver = env!("CARGO_PKG_VERSION");

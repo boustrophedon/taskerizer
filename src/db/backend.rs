@@ -7,13 +7,13 @@ use rusqlite::Result as SQLResult;
 
 pub trait DBBackend {
     /// Get metadata about database
-    fn metadata(&self) -> Result<DBMetadata, Error>;
+    fn metadata(&mut self) -> Result<DBMetadata, Error>;
 
     /// Add task to database
-    fn add_task(&self, task: &Task) -> Result<(), Error>;
+    fn add_task(&mut self, task: &Task) -> Result<(), Error>;
 
     /// Return a `Vec` of all tasks from the database
-    fn get_all_tasks(&self) -> Result<Vec<Task>, Error>;
+    fn get_all_tasks(&mut self) -> Result<Vec<Task>, Error>;
 
     /// Choose a new task at random to be the current task. Note that if the existing current task is not
     /// removed, it may be selected again. `p` is a parameter that must be between 0 and 1 which
@@ -23,15 +23,11 @@ pub trait DBBackend {
     ///
     /// TODO: specify the ordering more precisely by making the secondary sort key after priority
     /// something like date added. currently the task list is sorted by priority and then text.
-    ///
-    /// The use of &mut self here is essentially an implementation detail: in the SQLite backend,
-    /// in order to run the queries necessary to choose the task as a transaction, we need a
-    /// mutable reference to the connection.
     fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error>;
 
     /// Returns the currently selected task if there is one, or None if there are no tasks in the
     /// database.  This function should never return None if there are tasks in the database.
-    fn get_current_task(&self) -> Result<Option<Task>, Error>;
+    fn get_current_task(&mut self) -> Result<Option<Task>, Error>;
 
     /// Close the database. This is not really required due to the implementation of Drop for the
     /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
@@ -51,7 +47,7 @@ pub trait DBBackend {
 // you might not even need to pass in the idxes of field names, just the names.
 
 impl DBBackend for SqliteBackend {
-    fn metadata(&self) -> Result<DBMetadata, Error> {
+    fn metadata(&mut self) -> Result<DBMetadata, Error> {
         let (version, date_created) = self.connection.query_row(
             "SELECT version, date_created FROM metadata WHERE id = 1",
             &[],
@@ -69,7 +65,7 @@ impl DBBackend for SqliteBackend {
         )
     }
 
-    fn add_task(&self, task: &Task) -> Result<(), Error> {
+    fn add_task(&mut self, task: &Task) -> Result<(), Error> {
         self.connection.execute_named(
             "INSERT INTO tasks (task, priority, category) VALUES (:task, :priority, :category)",
             &[(":task", &task.task()),
@@ -81,7 +77,7 @@ impl DBBackend for SqliteBackend {
         Ok(())
     }
 
-    fn get_all_tasks(&self) -> Result<Vec<Task>, Error> {
+    fn get_all_tasks(&mut self) -> Result<Vec<Task>, Error> {
         let mut tasks = Vec::new();
 
         let mut stmt = self.connection.prepare_cached(
@@ -176,7 +172,7 @@ impl DBBackend for SqliteBackend {
         Ok(())
     }
 
-    fn get_current_task(&self) -> Result<Option<Task>, Error> {
+    fn get_current_task(&mut self) -> Result<Option<Task>, Error> {
         let mut stmt = self.connection.prepare_cached(
             "SELECT task, priority, category
             FROM tasks

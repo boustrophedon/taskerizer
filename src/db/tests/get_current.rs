@@ -21,7 +21,7 @@ fn assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &
 
 #[test]
 fn test_db_get_current_no_tasks() {
-    let db = open_test_db();
+    let mut db = open_test_db();
 
     let res = db.get_current_task();
     assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
