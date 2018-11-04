@@ -48,7 +48,13 @@ pub trait DBBackend {
 
 impl DBBackend for SqliteBackend {
     fn metadata(&mut self) -> Result<DBMetadata, Error> {
-        let (version, date_created) = self.connection.query_row(
+        // NOTE: even though we only read here, we are using a transaction so that when we switch
+        // to implementing these operations in terms of transactions, everything should "just work"
+        // simply by changing self to be a transaction wrapper. i.e. instead of "self.connection"
+        // we'll just use "self.transaction" directly.
+        let tx = self.connection.transaction()?;
+
+        let (version, date_created) = tx.query_row(
             "SELECT version, date_created FROM metadata WHERE id = 1",
             &[],
             |row| {
@@ -57,6 +63,8 @@ impl DBBackend for SqliteBackend {
                 (version, date_created)
             }
         ).map_err(|e| format_err!("Error getting metadata from database: {}", e))?;
+
+        tx.commit()?;
         Ok(
             DBMetadata {
                 version: version,
@@ -66,7 +74,8 @@ impl DBBackend for SqliteBackend {
     }
 
     fn add_task(&mut self, task: &Task) -> Result<(), Error> {
-        self.connection.execute_named(
+        let tx = self.connection.transaction()?;
+        tx.execute_named(
             "INSERT INTO tasks (task, priority, category) VALUES (:task, :priority, :category)",
             &[(":task", &task.task()),
               (":priority", &task.priority()),
@@ -74,13 +83,17 @@ impl DBBackend for SqliteBackend {
             ],
         ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
 
+        tx.commit()?;
         Ok(())
     }
 
     fn get_all_tasks(&mut self) -> Result<Vec<Task>, Error> {
         let mut tasks = Vec::new();
 
-        let mut stmt = self.connection.prepare_cached(
+        let tx = self.connection.transaction()?;
+ 
+        { // begin transaction scope
+        let mut stmt = tx.prepare_cached(
             "SELECT task, priority, category
             FROM tasks
             ORDER BY
@@ -99,7 +112,8 @@ impl DBBackend for SqliteBackend {
             let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
             tasks.push(task);
         }
-
+        } // end transaction scope
+        tx.commit()?;
         Ok(tasks)
     }
 
@@ -119,61 +133,65 @@ impl DBBackend for SqliteBackend {
         let tx = self.connection.transaction()
             .map_err(|e| format_err!("Error initiating transaction to choose current task: {}", e))?;
 
-        // transaction scope
-        // necessary due to no NLL but also could be moved into a separate function
-        {
-            let mut stmt = tx.prepare_cached(
-                "SELECT id, task, priority, category
-                FROM tasks
-                WHERE
-                category = ?1
-                ORDER BY
-                 priority ASC,
-                 task ASC
-                ")
-                .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
+        { // begin transaction scope
+        let mut stmt = tx.prepare_cached(
+            "SELECT id, task, priority, category
+            FROM tasks
+            WHERE
+            category = ?1
+            ORDER BY
+             priority ASC,
+             task ASC
+            ")
+            .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
 
-            let rows = stmt.query_map(&[&reward], |row| {
-                    (row.get(0), // id
-                    Task::from_parts(row.get(1), row.get(2), row.get(3))
-                    )
-                 })
-                .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
+        let rows = stmt.query_map(&[&reward], |row| {
+                (row.get(0), // id
+                Task::from_parts(row.get(1), row.get(2), row.get(3))
+                )
+             })
+            .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
 
-            for row_res in rows {
-                let (task_id, task_res) = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-                let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
-                tasks.push((task_id, task));
-            }
-
-            if tasks.len() == 0 {
-                return Err(format_err!("No tasks with given category were found in the database to choose from."));
-            }
-
-            let selected_task_id = select_task(p, &tasks);
-
-            let rows_modified = tx.execute_named(
-                "REPLACE INTO current (id, task_id)
-                VALUES (1, :task_id)",
-                &[(":task_id", &selected_task_id)])
-                .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
-
-            if rows_modified == 0 {
-                return Err(format_err!("Error updating current task in database: No rows were modified."));
-            }
-            else if rows_modified > 1 {
-                return Err(format_err!("Error updating current task in database: Too many rows were modified: {}.", rows_modified));
-            }
+        for row_res in rows {
+            let (task_id, task_res) = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
+            tasks.push((task_id, task));
         }
+
+        if tasks.len() == 0 {
+            return Err(format_err!("No tasks with given category were found in the database to choose from."));
+        }
+
+        let selected_task_id = select_task(p, &tasks);
+
+        let rows_modified = tx.execute_named(
+            "REPLACE INTO current (id, task_id)
+            VALUES (1, :task_id)",
+            &[(":task_id", &selected_task_id)])
+            .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
+
+        if rows_modified == 0 {
+            return Err(format_err!("Error updating current task in database: No rows were modified."));
+        }
+        else if rows_modified > 1 {
+            return Err(format_err!("Error updating current task in database: Too many rows were modified: {}.", rows_modified));
+        }
+        } // end transaction scope
         tx.commit()
             .map_err(|e| format_err!("Error committing transation to choose current task: {}", e))?;
-
 
         Ok(())
     }
 
     fn get_current_task(&mut self) -> Result<Option<Task>, Error> {
-        let mut stmt = self.connection.prepare_cached(
+        let tx = self.connection.transaction()?;
+
+        // we will be able to return the task directly without declaring outside the scope once we
+        // move this function to TxOperations
+        let current_task;
+
+        { // begin transaction scope
+        let mut stmt = tx.prepare_cached(
             "SELECT task, priority, category
             FROM tasks
             WHERE id = (
@@ -199,10 +217,11 @@ impl DBBackend for SqliteBackend {
         }
 
         // unwrap is fine, we check that there is one element directly above
-        let current_task = rows.pop().unwrap()
+        current_task = rows.pop().unwrap()
             .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?
             .map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
-
+        } // end transaction scope
+        tx.commit()?;
         Ok(Some(current_task))
     }
 
