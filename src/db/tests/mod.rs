@@ -6,6 +6,9 @@ use chrono::Utc;
 
 use db::{SqliteBackend, DBBackend};
 
+mod ops;
+mod tx;
+
 // utility functions
 
 /// Open an in-memory db for testing. If the environment variable `TKZR_TEST_SAVE_DB` is set, the
@@ -78,8 +81,3 @@ fn test_db_metadata() {
     assert!(metadata.date_created >= before_creation, "Database was created in the past");
     assert!(metadata.date_created < after_creation, "Database was created in the future");
 }
-
-mod add;
-mod list;
-mod choose_current;
-mod get_current;

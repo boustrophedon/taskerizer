@@ -1,6 +1,6 @@
 use db::DBBackend;
 
-use super::open_test_db;
+use db::tests::open_test_db;
 
 use task::Task;
 use task::test_utils::{example_task_list, arb_task_list};
