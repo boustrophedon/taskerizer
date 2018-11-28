@@ -10,6 +10,8 @@ I can list the things I need to do in a todo app, but then they just sit there a
 
 Similarly, a todo app makes the computer remember the tasks you have to do, whereas Taskerizer ideally will help you choose which task to do. Of course, supermemo uses a fancy spaced-repetition algorithm to achieve this. Taskerizer just uses a randomizer with priority weights and some optional skinner box mechanics.
 
+This is something, in retrospect, I wish I had in college.
+
 # Why prototype
 
 It's not a hackathon project kind of protoype. It's more of a I don't know the best way to make it usable, or to design the code (though I think the structure I have now isn't bad), so I might entirely rewrite it later. I also kind of want to implement server sync mechanism and possibly a mobile and/or web version.
@@ -28,4 +30,9 @@ See the command itself for full usage description. Briefly, you can add tasks wi
 below not yet implemented:
 `tkzr done` or `tkzr complete` marks the current task as complete, and chooses a new one at random.
 `tkzr skip` skips the current task, returning it to the task list.
-`tkzr break` skips the current task and chooses a task marked as a break at random. It is also used to change the probability with which break tasks are selected.
+`tkzr break` skips the current task and chooses a task marked as a break at random.
+
+# Other features I'd maybe like to do
+
+- Explicitly time-box all tasks and automatically skip to the next task when time is up.
+	- I suppose we would simply ask "did you complete this task? y/N" upon the next execution of any tkzr command, and then choose the next task.
