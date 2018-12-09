@@ -1,11 +1,9 @@
 use std::marker::PhantomData;
 
 use failure::Error;
-use db::{SqliteTransaction, DBMetadata};
+use db::SqliteTransaction;
 
 use task::Task;
-
-//use rusqlite::Result as SQLResult;
 
 #[derive(Debug)]
 struct RowId<'tx, 'conn: 'tx> {
@@ -30,15 +28,28 @@ pub trait DBTransaction {
     // /// database. This function should never return None if there are tasks in the database.
     // fn get_current_task(&self) -> Result<Option<Task>, Error>;
 
-    // /// Commit the transaction. If this method is not called, implementors of this trait should
-    // /// default to rolling back the transaction upon drop.
-    // //
-    // // TODO: add an explicit `rollback(self)` as well
-    // fn commit(self) -> Result<(), Error>;
+    /// Commit the transaction. If this method is not called, implementors of this trait should
+    /// default to rolling back the transaction upon drop.
+    fn commit(self) -> Result<(), Error>;
+
+    /// Roll back the transaction. Implementors of this trait should default to rolling back the
+    /// transaction upon drop.
+    fn rollback(self) -> Result<(), Error>;
 }
 
 impl<'conn> DBTransaction for SqliteTransaction<'conn> {
     fn add_task(&self, task: &Task) -> Result<(), Error> {
         return Ok(());
     }
+
+    fn commit(self) -> Result<(), Error> {
+        return Ok(());
+    }
+
+    fn rollback(self) -> Result<(), Error> {
+        return Ok(());
+    }
 }
+
+#[cfg(test)]
+mod tests;
