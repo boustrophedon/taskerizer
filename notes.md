@@ -481,3 +481,15 @@ My current strategy is as follows:
 	- i think the best thing for "choose new current if none" is as it is currently: make a DBBackend function `update_current` which is implemented in terms of transactions. that way if (e.g. on a server) two calls come in one after another "add x add y", and the second add's transaction completes after the first add but before the first `update_current`, one of the `update_current`s will run.
 	- ! *the point is that `update_current` should be idempotent* I'm just not sure that even then, arbitrary sequences of complete and add commute. eg two things in list -> "complete update add update" will not give the same results as "complete add update update"i
 	- so actually i am back to making update current work as a transaction operation if I want full, well, transactionality of the dboperations.
+
+---
+
+testing randomizer vs doing deterministic integration tests
+
+- turn the randomizer code into a "SelectionStrategy" interface, pass the interface into the db operations? maybe even make the db operations two-part, because they really do have two phases: do the actual operation (add/list/complete/whatever) and then update current. the second part is where we need the selectionstrategy.
+
+so we can test the selection strategy separately, and then make a separate strategy that's like "choose the largest" or "choose the smallest"
+
+and then when testing pass in a deterministic strategy.
+
+
