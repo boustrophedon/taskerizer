@@ -39,11 +39,23 @@ pub trait DBTransaction {
 
 impl<'conn> DBTransaction for SqliteTransaction<'conn> {
     fn add_task(&self, task: &Task) -> Result<(), Error> {
-        return Ok(());
+        let tx = &self.transaction;
+        tx.execute_named(
+            "INSERT INTO tasks (task, priority, category) VALUES (:task, :priority, :category)",
+            &[(":task", &task.task()),
+              (":priority", &task.priority()),
+              (":category", &task.is_break())
+            ],
+        ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
+        Ok(())
     }
 
     fn commit(self) -> Result<(), Error> {
-        return Ok(());
+        let tx = self.transaction;
+
+        tx.commit()
+            .map_err(|e| format_err!("Error committing transaction: {}", e))?;
+        Ok(())
     }
 
     fn rollback(self) -> Result<(), Error> {

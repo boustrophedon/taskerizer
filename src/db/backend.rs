@@ -1,5 +1,6 @@
 use failure::Error;
 use db::{SqliteBackend, DBMetadata};
+use db::DBTransaction;
 
 use task::Task;
 
@@ -74,15 +75,8 @@ impl DBBackend for SqliteBackend {
     }
 
     fn add_task(&mut self, task: &Task) -> Result<(), Error> {
-        let tx = self.connection.transaction()?;
-        tx.execute_named(
-            "INSERT INTO tasks (task, priority, category) VALUES (:task, :priority, :category)",
-            &[(":task", &task.task()),
-              (":priority", &task.priority()),
-              (":category", &task.is_break())
-            ],
-        ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
-
+        let tx = self.transaction()?;
+        tx.add_task(task)?; 
         tx.commit()?;
         Ok(())
     }
