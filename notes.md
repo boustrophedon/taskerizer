@@ -482,6 +482,14 @@ My current strategy is as follows:
 	- ! *the point is that `update_current` should be idempotent* I'm just not sure that even then, arbitrary sequences of complete and add commute. eg two things in list -> "complete update add update" will not give the same results as "complete add update update"i
 	- so actually i am back to making update current work as a transaction operation if I want full, well, transactionality of the dboperations.
 
+	- current thoughts:
+		- `update_current` should be in a transaction and should be called in any db operation that changes the database (so, add, complete, and skip, I guess)
+		- The "reimplement dbbackend trait in terms of dbtransaction" point above should be done via:
+			- adding a Transaction associated type to DBBackend (for sqlitebackend it should be sqlitetransaction)
+			- replacing `self` with the transaction type? i'm still not 100% sure about this because I'm not sure where to create the db and transaction.
+
+		- ! specifically, I'm not sure if I should create the db instance in main and pass the db connection to the library/dispatch function, or should I go even further and create the transaction in main and only pass the transaction to the rest of the library
+
 ---
 
 testing randomizer vs doing deterministic integration tests
@@ -492,4 +500,8 @@ so we can test the selection strategy separately, and then make a separate strat
 
 and then when testing pass in a deterministic strategy.
 
+---
 
+I'm writing tests for the `tx::get_tasks` and `tx::get_breaks` but I'm not sure that the way i'm writing them is useful. in particular, I'm not sure that I should be testing that commit and rollback "work" in the same tests that I check that the `get` functions work. if I were to write separate tests though, they would look exactly the same.
+
+additionally, those tests are kind of too big because I'm testing that `get_tasks` and `get_breaks` work in the same tests when they should be separate tests. there's just even more duplication otherwise. I guess I can refactor them later if I need to.
