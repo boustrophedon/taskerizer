@@ -465,13 +465,13 @@ on the other hand, I don't really want to do full on dependency injection with a
 My current strategy is as follows:
 
 - [x] Add SqliteTransaction wrapper struct
-- [ ] Use SqliteTransaction wrapper *inside* DBBackend, only changing the functions to take a &mut self (and the tests)
-- [ ] Create DBTransaction trait with somewhat simpler lower-level operations
+- [x] Use SqliteTransaction wrapper *inside* DBBackend, only changing the functions to take a &mut self (and the tests)
+- [x] Create DBTransaction trait with somewhat simpler lower-level operations
 	- DBTransaciton, like the original DBBackend operations, will take &self - this allows us to make Uids that reference its lifetime
 	- `list_tasks_with_priority` or something that returns Vec<(Uid, priority)> where the Uid is bound to the lifetime of the transaction
 	- Then we can use that to implement `choose_new_task`, etc. most of the other dbbackend operations are single-queries so they can mostly be the same
 	- NOTE: DBTransaction should note somewhere that structs implementing it must have some defined behavior upon drop - not sure if there's a good way to encode this in the type system. by "defined behavior" i mean it should be defined the same for all structs implementing DBTransaction, and it should be rollback on drop
-- [ ] Add `transaction(&mut self)` to DBBackend
+- [x] Add `transaction(&mut self)` to DBBackend
 	- Test? maybe just a single "does this work" test, but really we're literally just calling the rusqlite Connection::transaction function so probably don't need to
 - [ ] Copy code inside DBBackend into DBTransaction
 	- This we can write new tests for, as above (eg begin transaction, add task, rollback. then check we have no tasks. )
