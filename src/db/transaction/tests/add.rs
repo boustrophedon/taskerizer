@@ -6,7 +6,8 @@ use crate::task::test_utils::{example_task_1, arb_task_list};
 // These tests don't really do anything. They just check that "if you add a valid task, the db does
 // not error."
 //
-// TODO add an invalid task (eg null bytes in string) and check that it errors?
+// TODO add an invalid task (eg null bytes in string) and check that it errors? there are kind of
+// already tests for this in db::tests::list.rs
 //
 // Alternatively, pass through the number of rows changed from the sql calls and check that it's
 // correct.

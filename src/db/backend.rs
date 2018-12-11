@@ -82,33 +82,19 @@ impl DBBackend for SqliteBackend {
     }
 
     fn get_all_tasks(&mut self) -> Result<Vec<Task>, Error> {
-        let mut tasks = Vec::new();
+        let tx = self.transaction()?;
+        let tasks = tx.get_tasks()
+            .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?;
+        let breaks = tx.get_breaks()
+            .map_err(|e| format_err!("Failed to get break tasks during transaction: {}", e))?;
 
-        let tx = self.connection.transaction()?;
- 
-        { // begin transaction scope
-        let mut stmt = tx.prepare_cached(
-            "SELECT task, priority, category
-            FROM tasks
-            ORDER BY
-             category ASC,
-             priority DESC,
-             task ASC
-            ")
-            .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
-        let rows = stmt.query_map(&[], |row| {
-                Task::from_parts(row.get(0), row.get(1), row.get(2))
-             })
-            .map_err(|e| format_err!("Error executing task list query: {}", e))?;
+        // chain tasks followed by breaks into single vector
+        let all_tasks = tasks.into_iter().map(|t| t.1)
+            .chain(breaks.into_iter().map(|t| t.1))
+            .collect();
 
-        for row_res in rows {
-            let task_res = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
-            tasks.push(task);
-        }
-        } // end transaction scope
         tx.commit()?;
-        Ok(tasks)
+        return Ok(all_tasks);
     }
 
     fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error> {
