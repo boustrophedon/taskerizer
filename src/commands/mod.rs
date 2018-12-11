@@ -2,8 +2,8 @@ use failure::{Error, err_msg};
 
 use structopt::StructOpt;
 
-use db::DBBackend;
-use config::Config;
+use crate::db::DBBackend;
+use crate::config::Config;
 
 use rand::prelude::*;
 use rand::distributions::Uniform;

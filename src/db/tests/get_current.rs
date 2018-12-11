@@ -1,9 +1,9 @@
-use db::{DBBackend, SqliteBackend};
+use crate::db::{DBBackend, SqliteBackend};
 
-use db::tests::open_test_db;
+use crate::db::tests::open_test_db;
 
-use task::Task;
-use task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
+use crate::task::Task;
+use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
 // utility for checking correct current task is selected
 fn assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &str) {

@@ -1,8 +1,8 @@
-use db::DBBackend;
+use crate::db::DBBackend;
 
-use db::tests::open_test_db;
+use crate::db::tests::open_test_db;
 
-use task::test_utils::{example_task_1, example_task_break_1, arb_task};
+use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task};
 
 #[test]
 fn test_db_add() {

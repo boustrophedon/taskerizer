@@ -1,8 +1,8 @@
 use failure::Error;
-use db::{SqliteBackend, DBMetadata};
-use db::DBTransaction;
+use crate::db::{SqliteBackend, DBMetadata};
+use crate::db::DBTransaction;
 
-use task::Task;
+use crate::task::Task;
 
 use rusqlite::Result as SQLResult;
 
@@ -260,8 +260,8 @@ fn select_task(p: f32, tasks: &[(i32, Task)]) -> i32 {
 
 #[cfg(test)]
 mod select_tests {
-    use task::Task;
-    use task::test_utils::{example_task_1, example_task_3, example_task_list, arb_task_list_bounded};
+    use crate::task::Task;
+    use crate::task::test_utils::{example_task_1, example_task_3, example_task_list, arb_task_list_bounded};
     use super::select_task;
 
     #[test]

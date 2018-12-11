@@ -1,5 +1,5 @@
-use task::Task;
-use commands::{TKZCmd, Add};
+use crate::task::Task;
+use crate::commands::{TKZCmd, Add};
 
 pub fn add_from_task(task: &Task) -> TKZCmd {
     TKZCmd::Add( Add {

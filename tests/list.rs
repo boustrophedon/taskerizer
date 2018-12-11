@@ -1,9 +1,8 @@
-extern crate taskerizer_prototype as tkzr;
+use taskerizer_prototype as tkzr;
 
 mod test_utils;
 
-use tkzr::commands;
-use commands::{TKZArgs, TKZCmd};
+use self::tkzr::commands::{TKZArgs, TKZCmd};
 
 #[test]
 fn test_cmd_list() {

@@ -1,9 +1,9 @@
-use db::DBBackend;
+use crate::db::DBBackend;
 
-use db::tests::open_test_db;
+use crate::db::tests::open_test_db;
 
-use task::Task;
-use task::test_utils::{example_task_list, arb_task_list};
+use crate::task::Task;
+use crate::task::test_utils::{example_task_list, arb_task_list};
 
 #[test]
 fn test_db_list_empty() {

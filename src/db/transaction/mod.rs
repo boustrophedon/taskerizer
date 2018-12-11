@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
 use failure::Error;
-use db::SqliteTransaction;
+use crate::db::SqliteTransaction;
 
-use task::Task;
+use crate::task::Task;
 
 #[derive(Debug)]
 struct RowId<'tx, 'conn: 'tx> {

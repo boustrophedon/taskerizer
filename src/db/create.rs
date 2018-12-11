@@ -4,7 +4,7 @@ use chrono::Utc;
 use rusqlite::Connection;
 use failure::Error;
 
-use db::SqliteBackend;
+use crate::db::SqliteBackend;
 
 // Open impls
 impl SqliteBackend {

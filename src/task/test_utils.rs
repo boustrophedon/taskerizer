@@ -1,6 +1,6 @@
 use proptest::prelude::*;
 
-use task::Task;
+use crate::task::Task;
 
 // we can't currently make these statics (without using lazy_static)
 // it should be possible on nightly due to compile time evaluation

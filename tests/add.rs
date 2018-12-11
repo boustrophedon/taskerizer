@@ -1,11 +1,8 @@
-extern crate taskerizer_prototype as tkzr;
+use taskerizer_prototype as tkzr;
 
 mod test_utils;
 
-use tkzr::commands;
-use commands::{TKZArgs, TKZCmd};
-
-use commands::Add;
+use self::tkzr::commands::{TKZArgs, TKZCmd, Add};
 
 // TODO some task example data and test code here is shared with the inner unit tests, maybe find a way to dedup
 

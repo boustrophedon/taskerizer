@@ -1,7 +1,7 @@
-use db::DBTransaction;
-use db::tests::open_test_db;
+use crate::db::DBTransaction;
+use crate::db::tests::open_test_db;
 
-use task::test_utils::{example_task_1, arb_task_list};
+use crate::task::test_utils::{example_task_1, arb_task_list};
 
 // These tests don't really do anything. They just check that "if you add a valid task, the db does
 // not error."

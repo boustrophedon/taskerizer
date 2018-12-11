@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use failure::Error;
 
-use db::SqliteBackend;
+use crate::db::SqliteBackend;
 
 /// Configuration parameters.
 pub struct Config {

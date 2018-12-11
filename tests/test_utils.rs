@@ -2,16 +2,14 @@
 // separately
 #![allow(dead_code)]
 
-extern crate tempfile;
+use taskerizer_prototype as tkzr;
 
-extern crate taskerizer_prototype as tkzr;
+use tempfile::{tempdir, TempDir};
 
-use self::tempfile::{tempdir, TempDir};
+use self::tkzr::commands::{TKZArgs, TKZCmd};
+use self::tkzr::commands::{Add, Current};
 
-use tkzr::commands::{TKZArgs, TKZCmd};
-use tkzr::commands::{Add, Current};
-
-use tkzr::config::Config;
+use self::tkzr::config::Config;
 
 /// Create a test config with the database in a temporary directory. We return the TempDir because
 /// it is deleted when it is dropped.

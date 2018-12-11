@@ -1,5 +1,3 @@
-extern crate taskerizer_prototype as tkzr;
-
 mod test_utils;
 
 // TODO test current top flag
