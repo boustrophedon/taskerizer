@@ -21,8 +21,8 @@ pub trait DBTransaction {
     /// Return a `Vec` of all breaks from the database.
     fn get_breaks(&self) -> Result<Vec<(RowId, Task)>, Error>;
 
-    // /// Set the current task to be the task with id `id`.
-    // fn set_current_task(&self, id: &RowId) -> Result<(), Error>;
+    /// Set the current task to be the task with id `id`.
+    fn set_current_task(&self, id: &RowId) -> Result<(), Error>;
 
     // /// Returns the currently selected task if there is one, or None if there are no tasks in the
     // /// database. This function should never return None if there are tasks in the database.
@@ -104,6 +104,17 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             tasks.push((id, task));
         }
         Ok(tasks)
+    }
+
+    fn set_current_task(&self, id: &RowId) -> Result<(), Error> {
+        let tx = &self.transaction;
+        tx.execute_named(
+            "REPLACE INTO current (id, task_id)
+            VALUES (1, :task_id)",
+            &[(":task_id", &id.id)])
+            .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
+        Ok(())
+
     }
 
     fn commit(self) -> Result<(), Error> {
