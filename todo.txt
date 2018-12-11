@@ -1,4 +1,5 @@
 current todo:
+	- refactoring of dbbackend operations using transactions
 	- display current task in output of list command with asterisk or something
 
 implement database operations:
@@ -6,6 +7,8 @@ implement database operations:
 		- Complete: mark task as complete
 		- Skip: skip current task
 	- refactor!!!
+
+change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
 
 ** Add user auth struct to parameters for db.
 	- on local db it should be like 0 or whatever
@@ -15,6 +18,8 @@ implement database operations:
 once we implement format_long, maybe use terminal codes to bold the task description or something
 
 deduplicate task validation code in Add struct and Task::from_parts
+
+deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks}
 
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
