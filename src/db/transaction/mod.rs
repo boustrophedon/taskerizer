@@ -24,9 +24,9 @@ pub trait DBTransaction {
     /// Set the current task to be the task with id `id`.
     fn set_current_task(&self, id: &RowId) -> Result<(), Error>;
 
-    // /// Returns the currently selected task if there is one, or None if there are no tasks in the
-    // /// database. This function should never return None if there are tasks in the database.
-    // fn get_current_task(&self) -> Result<Option<Task>, Error>;
+    /// Returns the currently selected task if there is one, or None if there are no tasks in the
+    /// database. This function should never return None if there are tasks in the database.
+    fn get_current_task(&self) -> Result<Option<Task>, Error>;
 
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
@@ -115,6 +115,37 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
         Ok(())
 
+    }
+
+    fn get_current_task(&self) -> Result<Option<Task>, Error> {
+        let tx = &self.transaction;
+        let mut stmt = tx.prepare_cached(
+            "SELECT task, priority, category
+            FROM tasks
+            WHERE id = (
+                SELECT task_id FROM current
+                WHERE id = 1
+            )
+            ")
+            .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
+
+        let rows: Vec<_> = stmt.query_map(&[], |row| {
+                Task::from_parts(row.get(0), row.get(1), row.get(2))
+             })
+            .map_err(|e| format_err!("Error executing current task query: {}", e))?
+            .collect();
+
+        if rows.len() > 1 {
+            return Err(format_err!("Multiple tasks selected in current task query. {} tasks, selected {:?}", rows.len(), rows))
+        }
+
+        for row_res in rows {
+            let task_res = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
+            return Ok(Some(task));
+        }
+        // if there are no rows, return Ok(None)
+        return Ok(None);
     }
 
     fn commit(self) -> Result<(), Error> {
