@@ -505,3 +505,24 @@ and then when testing pass in a deterministic strategy.
 I'm writing tests for the `tx::get_tasks` and `tx::get_breaks` but I'm not sure that the way i'm writing them is useful. in particular, I'm not sure that I should be testing that commit and rollback "work" in the same tests that I check that the `get` functions work. if I were to write separate tests though, they would look exactly the same.
 
 additionally, those tests are kind of too big because I'm testing that `get_tasks` and `get_breaks` work in the same tests when they should be separate tests. there's just even more duplication otherwise. I guess I can refactor them later if I need to.
+
+---
+
+Auth idea:
+
+the problem i'm trying to solve is how to both do local auth and also remote auth and not be able to mix them up, eg by storing the local auth in the same config as the server config and then accidentally deploying a server with local auth enabled in the server config.
+
+basically, the difference should be 1) the auth credentials should be stored in a separate file (pretty obvious) 2) the binaries for the server and for local use should pass credentials differently
+
+server: receive request, get credentials from request, pass into library functions (eg dispatch)
+terminal: open local credential file, get credentials from file, pass into library functions (eg dispatch)
+
+---
+
+idea for refactoring dboperations:
+leave DBBackend::transaction as taking &mut self
+other operations get rid of the &self parameter and just take a &DBTransaction as the first parameter. I don't think I can actually do this though because then I can't call `db.get_all_tasks()` because the first parameter would then be the &db rather than the &tx. I think.
+
+---
+
+also, in server communication we need to either serialize the transaction operations rather than the dbbackend operations or include the current task when communicating with the server, because choosing the current task is nondeterministic. another option is to add the chosen task UUID to the operation log inside `tx::set_current_task` or something.
