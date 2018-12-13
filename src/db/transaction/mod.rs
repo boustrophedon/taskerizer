@@ -108,11 +108,19 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
     fn set_current_task(&self, id: &RowId) -> Result<(), Error> {
         let tx = &self.transaction;
-        tx.execute_named(
+        let rows_modified = tx.execute_named(
             "REPLACE INTO current (id, task_id)
             VALUES (1, :task_id)",
             &[(":task_id", &id.id)])
             .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
+
+        if rows_modified == 0 {
+            return Err(format_err!("Error updating current task in database: No rows were modified."));
+        }
+        else if rows_modified > 1 {
+            return Err(format_err!("Error updating current task in database: Too many rows were modified: {}.", rows_modified));
+        }
+
         Ok(())
 
     }
