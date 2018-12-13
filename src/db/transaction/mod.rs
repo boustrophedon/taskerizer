@@ -5,7 +5,7 @@ use crate::db::SqliteTransaction;
 
 use crate::task::Task;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct RowId<'tx, 'conn: 'tx> {
     id: i32,
     _transaction: PhantomData<&'tx SqliteTransaction<'conn>>
