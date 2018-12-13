@@ -27,7 +27,7 @@ pub fn temp_config() -> (TempDir, Config) {
     (test_dir, cfg)
 }
 
-pub fn example_add_cmd1() -> TKZArgs {
+pub fn example_add_cmd_task1() -> TKZArgs {
     let task = "hello this is a task".to_string();
     TKZArgs {
         cmd: Some(TKZCmd::Add( Add {
@@ -38,8 +38,30 @@ pub fn example_add_cmd1() -> TKZArgs {
     }  
 }
 
-pub fn example_add_cmd2() -> TKZArgs {
-    let task = "yo this is another task".to_string();
+pub fn example_add_cmd_task2() -> TKZArgs {
+    let task = "hello this is also a task".to_string();
+    TKZArgs {
+        cmd: Some(TKZCmd::Add( Add {
+            reward: false,
+            priority: 9,
+            task: task,
+        })) 
+    }  
+}
+
+pub fn example_add_cmd_break1() -> TKZArgs {
+    let task = "yo this is a break".to_string();
+    TKZArgs {
+        cmd: Some(TKZCmd::Add( Add {
+            reward: true,
+            priority: 2,
+            task: task,
+        }))
+    }
+}
+
+pub fn example_add_cmd_break2() -> TKZArgs {
+    let task = "ayyy this is another break".to_string();
     TKZArgs {
         cmd: Some(TKZCmd::Add( Add {
             reward: true,

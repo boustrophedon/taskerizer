@@ -10,7 +10,7 @@ fn test_cmd_list() {
 
     // -- do add command
 
-    let args = test_utils::example_add_cmd1();
+    let args = test_utils::example_add_cmd_task1();
     args.cmd().dispatch(&cfg).expect("Adding task failed");
 
     // -- do list command with same db that we just did add on
@@ -39,12 +39,12 @@ fn test_cmd_list_two() {
 
     // -- do add command
 
-    let args = test_utils::example_add_cmd1();
+    let args = test_utils::example_add_cmd_task1();
     args.cmd().dispatch(&cfg).expect("Adding task 1 failed");
 
     // -- do second add command
 
-    let args = test_utils::example_add_cmd2();
+    let args = test_utils::example_add_cmd_break1();
     args.cmd().dispatch(&cfg).expect("Adding task 2 failed");
 
     // -- do list command with same db that we just did adds to
@@ -62,7 +62,7 @@ fn test_cmd_list_two() {
     let expected = vec![
         "Priority \t Task".to_string(),
         "   1 \t hello this is a task".to_string(),
-        "   4 \t yo this is another task".to_string(),
+        "   2 \t yo this is a break".to_string(),
     ];
     assert_eq!(output, expected);
 

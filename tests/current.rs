@@ -27,7 +27,7 @@ fn test_cmd_current_1() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command
-    let args = test_utils::example_add_cmd1();
+    let args = test_utils::example_add_cmd_task1();
     args.cmd().dispatch(&cfg).expect("Adding task failed");
 
     // -- do current command
@@ -56,7 +56,7 @@ fn test_cmd_current_2() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command
-    let args = test_utils::example_add_cmd2();
+    let args = test_utils::example_add_cmd_break1();
     args.cmd().dispatch(&cfg).expect("Adding task failed");
 
     // -- do current command
@@ -72,9 +72,9 @@ fn test_cmd_current_2() {
 
     // TODO implement to_string (or format_*, see todo.txt) for Task and fix it here
     let expected = vec![
-        format!("{}\n", "yo this is another task"),
+        format!("{}\n", "yo this is a break"),
         "Category: Break".to_string(),
-        "Priority: 4".to_string(),
+        "Priority: 2".to_string(),
     ];
 
     assert_eq!(output, expected);
@@ -85,7 +85,7 @@ fn test_cmd_current_3_interspersed() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command
-    let args = test_utils::example_add_cmd2();
+    let args = test_utils::example_add_cmd_break1();
     args.cmd().dispatch(&cfg).expect("Adding task failed");
 
     // -- do current command
@@ -101,15 +101,15 @@ fn test_cmd_current_3_interspersed() {
 
     // TODO implement to_string (or format_*, see todo.txt) for Task and fix it here
     let expected = vec![
-        format!("{}\n", "yo this is another task"),
+        format!("{}\n", "yo this is a break"),
         "Category: Break".to_string(),
-        "Priority: 4".to_string(),
+        "Priority: 2".to_string(),
     ];
 
     assert_eq!(output, expected);
 
     // -- do another add command
-    let args = test_utils::example_add_cmd1();
+    let args = test_utils::example_add_cmd_task1();
     args.cmd().dispatch(&cfg).expect("Adding task failed");
 
     //
@@ -128,9 +128,9 @@ fn test_cmd_current_3_interspersed() {
     let output = res.unwrap();
 
     let expected = vec![
-        format!("{}\n", "yo this is another task"),
+        format!("{}\n", "yo this is a break"),
         "Category: Break".to_string(),
-        "Priority: 4".to_string(),
+        "Priority: 2".to_string(),
     ];
 
     assert_eq!(output, expected);

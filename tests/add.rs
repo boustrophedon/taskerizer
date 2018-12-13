@@ -53,7 +53,7 @@ fn test_cmd_add() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command
-    let args = test_utils::example_add_cmd1();
+    let args = test_utils::example_add_cmd_task1();
 
     // -- check success
     let res = args.cmd().dispatch(&cfg);
@@ -72,7 +72,7 @@ fn test_cmd_add_two() {
     let (_dir, cfg) = test_utils::temp_config();
 
     // -- do add command
-    let args = test_utils::example_add_cmd1();
+    let args = test_utils::example_add_cmd_task1();
     let res = args.cmd().dispatch(&cfg);
 
     // -- check success
@@ -87,7 +87,7 @@ fn test_cmd_add_two() {
 
 
     // -- do second add command
-    let args = test_utils::example_add_cmd2();
+    let args = test_utils::example_add_cmd_break1();
     let res = args.cmd().dispatch(&cfg);
 
     // -- check success
@@ -96,7 +96,7 @@ fn test_cmd_add_two() {
     // -- check output has our second task
     let output = res.unwrap();
     let expected = vec![
-        format!("Task \"{}\" added to task list.", "yo this is another task"),
+        format!("Task \"{}\" added to task list.", "yo this is a break"),
     ];
     assert_eq!(output, expected);
 }
