@@ -60,7 +60,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             WHERE category = 0
             ORDER BY
              category ASC,
-             priority DESC
+             priority ASC
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(&[], |row| {
@@ -88,7 +88,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             WHERE category = 1
             ORDER BY
              category ASC,
-             priority DESC
+             priority ASC
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(&[], |row| {

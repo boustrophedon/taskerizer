@@ -25,6 +25,8 @@ specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
 	- this makes tests somewhat fragile
 	- "specify explicitly" probably just means add tests that the existing output is the one we want
+	- this is now explicitly specified in the tests/list.rs test, but not in db::tests::lists
+		- I am worried that sqlite will sort unicode differently than rust, so maybe just check that the priorities are ordered. the ordering of tasks with the same priority doesn't really matter. (it will matter if we were to make an explicit row-ordering but that could be solved by using UUIDs for each row)
 
 test and implement config parsing:
 	- pick config dir and file
