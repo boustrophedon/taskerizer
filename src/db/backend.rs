@@ -105,39 +105,17 @@ impl DBBackend for SqliteBackend {
             return Err(format_err!("p parameter was greater than 1"));
         }
 
-        // TODO change get_all_tasks to either return a UUID or internally add another
-        // "get_all_tasks_with_rowid" and use it both here and in get_all_tasks
-
-        let mut tasks = Vec::new();
-
-        let tx = self.connection.transaction()
-            .map_err(|e| format_err!("Error initiating transaction to choose current task: {}", e))?;
-
-        { // begin transaction scope
-        let mut stmt = tx.prepare_cached(
-            "SELECT id, task, priority, category
-            FROM tasks
-            WHERE
-            category = ?1
-            ORDER BY
-             priority ASC,
-             task ASC
-            ")
-            .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
-
-        let rows = stmt.query_map(&[&reward], |row| {
-                let id: i32 = row.get(0);
-                (id,
-                Task::from_parts(row.get(1), row.get(2), row.get(3))
-                )
-             })
-            .map_err(|e| format_err!("Error executing task list query with category: {}", e))?;
-
-        for row_res in rows {
-            let (task_id, task_res) = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
-            tasks.push((task_id, task));
-        }
+        let tx = self.transaction()?;
+        let tasks = {
+            if reward {
+                tx.get_breaks()
+                    .map_err(|e| format_err!("Failed to get break tasks during transaction: {}", e))?
+            }
+            else {
+                tx.get_tasks()
+                    .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?
+            }
+        };
 
         if tasks.len() == 0 {
             return Err(format_err!("No tasks with given category were found in the database to choose from."));
@@ -145,21 +123,10 @@ impl DBBackend for SqliteBackend {
 
         let selected_task_id = select_task(p, &tasks);
 
-        let rows_modified = tx.execute_named(
-            "REPLACE INTO current (id, task_id)
-            VALUES (1, :task_id)",
-            &[(":task_id", &selected_task_id)])
-            .map_err(|e| format_err!("Error updating current task in database: {}", e))?;
+        tx.set_current_task(&selected_task_id)
+            .map_err(|e| format_err!("Failed to set current task during transaction: {}", e))?;
 
-        if rows_modified == 0 {
-            return Err(format_err!("Error updating current task in database: No rows were modified."));
-        }
-        else if rows_modified > 1 {
-            return Err(format_err!("Error updating current task in database: Too many rows were modified: {}.", rows_modified));
-        }
-        } // end transaction scope
-        tx.commit()
-            .map_err(|e| format_err!("Error committing transation to choose current task: {}", e))?;
+        tx.commit()?;
 
         Ok(())
     }
