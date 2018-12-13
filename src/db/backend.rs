@@ -126,7 +126,8 @@ impl DBBackend for SqliteBackend {
             .map_err(|e| format_err!("Error preparing task list query with category: {}", e))?;
 
         let rows = stmt.query_map(&[&reward], |row| {
-                (row.get(0), // id
+                let id: i32 = row.get(0);
+                (id,
                 Task::from_parts(row.get(1), row.get(2), row.get(3))
                 )
              })
@@ -216,7 +217,7 @@ impl DBBackend for SqliteBackend {
 /// the priorities are added up and divided into intervals proportional to each `Task`s priority,
 /// choose the Task whose interval `p` lies in. In pretty much all use cases we will have to
 /// handled zero tasks separately anyway, so we panic if `tasks` is empty.
-fn select_task(p: f32, tasks: &[(i32, Task)]) -> i32 {
+fn select_task<T: Copy>(p: f32, tasks: &[(T, Task)]) -> T {
     debug_assert!(0.0 <= p);
     debug_assert!(p <= 1.0);
 
