@@ -36,7 +36,7 @@ proptest! {
         // set current task to each task and check for error
         for id in all_task_ids {
             let res = tx.set_current_task(&id);
-            assert!(res.is_ok(), "Error setting current task: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Error setting current task: {}", res.unwrap_err());
         }
         tx.commit().unwrap();
     }

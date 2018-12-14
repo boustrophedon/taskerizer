@@ -217,6 +217,7 @@ mod select_tests {
     use crate::task::Task;
     use crate::task::test_utils::{example_task_1, example_task_3, example_task_list, arb_task_list_bounded};
     use super::select_task;
+    use proptest::test_runner::TestCaseError;
 
     #[test]
     fn test_select_task_single() {
@@ -238,7 +239,7 @@ mod select_tests {
         assert_eq!(select_task(1.0, &tasks), 2);
     }
 
-    fn assert_select_in_order(tasks: &[(i32, Task)]) {
+    fn prop_assert_select_in_order(tasks: &[(i32, Task)]) -> Result<(), TestCaseError> {
         // kind of ugly test because we're duplicating a computation inside the actual function
         let total_priority = tasks.iter().fold(0, |acc, (_, task)| acc + task.priority()) as f32;
         let min_sep = 1.0/total_priority/2.0;
@@ -261,7 +262,8 @@ mod select_tests {
         }
 
         let ids: Vec<i32> = tasks.iter().map(|(id, _)| *id).collect();
-        assert_eq!(selected, ids);
+        prop_assert_eq!(selected, ids);
+        Ok(())
     }
 
     #[test]
@@ -270,7 +272,7 @@ mod select_tests {
         let len = tasks.len() as i32;
 
         let tasks: Vec<(i32, Task)> = (1..len+1).zip(tasks).collect();
-        assert_select_in_order(&tasks);
+        assert!(prop_assert_select_in_order(&tasks).is_ok(), "Tasks are not selected in order of priority");
     }
 
     use proptest::test_runner::Config;
@@ -280,7 +282,7 @@ mod select_tests {
         fn test_select_task_list_arb(tasks in arb_task_list_bounded()) {
             let len = tasks.len() as i32;
             let tasks: Vec<(i32, Task)> = (1..len+1).zip(tasks).collect();
-            assert_select_in_order(&tasks);
+            prop_assert_select_in_order(&tasks)?;
         }
     }
 }

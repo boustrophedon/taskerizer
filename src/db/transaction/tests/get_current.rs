@@ -89,13 +89,13 @@ proptest! {
 
             // verify we get back the one we set
             let res = tx.get_current_task(); 
-            assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
             let task_opt = res.unwrap();
-            assert!(task_opt.is_some(), "No current task even though we set it.");
+            prop_assert!(task_opt.is_some(), "No current task even though we set it.");
 
             let current_task = task_opt.unwrap();
-            assert_eq!(current_task, db_task);
+            prop_assert_eq!(current_task, db_task);
         }
     }
 }

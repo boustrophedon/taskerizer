@@ -82,20 +82,20 @@ proptest! {
         // add all tasks to db
         for task in &tasks {
             let res = db.add_task(&task);
-            assert!(res.is_ok(), "Adding task failed. task: {:?}, err: {}", task, res.unwrap_err());
+            prop_assert!(res.is_ok(), "Adding task failed. task: {:?}, err: {}", task, res.unwrap_err());
         }
 
         // get tasks back
         let res = db.get_all_tasks();
-        assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
         let db_tasks = res.unwrap();
 
         // check number of tasks returned is correct
-        assert_eq!(db_tasks.len(), tasks.len());
+        prop_assert_eq!(db_tasks.len(), tasks.len());
 
         // check every task made it back
         for task in &tasks {
-            assert!(db_tasks.contains(task), "tasks returned from db does not contain task {:?}", task);
+            prop_assert!(db_tasks.contains(task), "tasks returned from db does not contain task {:?}", task);
         }
     }
 }

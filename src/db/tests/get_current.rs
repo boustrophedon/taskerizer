@@ -5,6 +5,8 @@ use crate::db::tests::open_test_db;
 use crate::task::Task;
 use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
+use proptest::test_runner::TestCaseError;
+
 // utility for checking correct current task is selected
 fn assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &str) {
     db.choose_current_task(p, expected_task.is_break()).expect("Failed choosing current task");
@@ -18,6 +20,23 @@ fn assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &
     let task = task_opt.unwrap();
     assert_eq!(task, *expected_task, "{}", msg);
 }
+
+// utility for checking correct current task is selected
+fn prop_assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &str) -> Result<(), TestCaseError> {
+    db.choose_current_task(p, expected_task.is_break()).expect("Failed choosing current task");
+
+    let res = db.get_current_task();
+    prop_assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
+
+    let task_opt = res.unwrap();
+    prop_assert!(task_opt.is_some(), "No current task even though we selected one.");
+
+    let task = task_opt.unwrap();
+    prop_assert_eq!(&task, expected_task, "{}", msg);
+
+    Ok(())
+}
+
 
 #[test]
 fn test_db_get_current_no_tasks() {
@@ -149,21 +168,21 @@ proptest! {
 
         // assert task at p=0.0 has min priority
         if let Some(min_task) = min_task {
-            assert_task_at_p(&mut db, 0.0, &min_task, "min_task");
+            prop_assert_task_at_p(&mut db, 0.0, &min_task, "min_task")?;
         }
         // assert task at p=1.0 has max priority
         if let Some(max_task) = max_task {
-            assert_task_at_p(&mut db, 1.0, &max_task, "max_task");
+            prop_assert_task_at_p(&mut db, 1.0, &max_task, "max_task")?;
         }
 
         // assert break at p=0.0 has min priority
         if let Some(min_break) = min_break {
-            assert_task_at_p(&mut db, 0.0, &min_break, "min_break");
+            prop_assert_task_at_p(&mut db, 0.0, &min_break, "min_break")?;
         }
 
         // assert break at p=1.0 has max priority
         if let Some(max_break) = max_break {
-            assert_task_at_p(&mut db, 1.0, &max_break, "max_break");
+            prop_assert_task_at_p(&mut db, 1.0, &max_break, "max_break")?;
         }
     }
 }

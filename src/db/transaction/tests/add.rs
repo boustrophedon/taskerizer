@@ -48,10 +48,10 @@ proptest! {
 
         for task in tasks {
             let res = tx.add_task(&task);
-            assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
         }
         let res = tx.rollback();
-        assert!(res.is_ok(), "Rolling back transaction failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Rolling back transaction failed: {}", res.unwrap_err());
     }
 }
 
@@ -63,9 +63,9 @@ proptest! {
 
         for task in tasks {
             let res = tx.add_task(&task);
-            assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
         }
         let res = tx.commit();
-        assert!(res.is_ok(), "Committing transaction failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Committing transaction failed: {}", res.unwrap_err());
     }
 }

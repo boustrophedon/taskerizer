@@ -5,6 +5,7 @@ use crate::db::tests::open_test_db;
 use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
 use failure::Error;
+use proptest::test_runner::TestCaseError;
 
 // TODO besides the error tests, I'm not sure how useful these tests are. see ideas.txt
 
@@ -17,6 +18,18 @@ fn assert_no_task_found_error(res: Result<(), Error>) {
     assert!(err.to_string().contains("No tasks with given category were found"), 
             "Not the expected error when choosing task with no tasks available: {}", err);
 }
+
+/// When we try to choose the current task from a category with no tasks in it, make sure we get
+/// the correct error.
+fn prop_assert_no_task_found_error(res: Result<(), Error>) -> Result<(), TestCaseError> {
+    prop_assert!(res.is_err(), "Choosing current task with no existing tasks succeeded.");
+
+    let err = res.unwrap_err();
+    prop_assert!(err.to_string().contains("No tasks with given category were found"), 
+            "Not the expected error when choosing task with no tasks available: {}", err);
+    Ok(())
+}
+
 
 #[test]
 fn test_db_choose_current_error_p() {
@@ -92,24 +105,24 @@ proptest! {
         let res_first = db.choose_current_task(0.0, true);
         let res_last = db.choose_current_task(1.0, true);
         if has_break {
-            assert!(res_first.is_ok(), "Choosing first current break failed: {}", res_first.unwrap_err());
-            assert!(res_last.is_ok(), "Choosing last current break failed: {}", res_last.unwrap_err());
+            prop_assert!(res_first.is_ok(), "Choosing first current break failed: {}", res_first.unwrap_err());
+            prop_assert!(res_last.is_ok(), "Choosing last current break failed: {}", res_last.unwrap_err());
         }
         else {
-            assert_no_task_found_error(res_first);
-            assert_no_task_found_error(res_last);
+            prop_assert_no_task_found_error(res_first)?;
+            prop_assert_no_task_found_error(res_last)?;
         }
 
 
         let res_first = db.choose_current_task(0.0, false);
         let res_last = db.choose_current_task(1.0, false);
         if has_task {
-            assert!(res_first.is_ok(), "Choosing first current task failed: {}", res_first.unwrap_err());
-            assert!(res_last.is_ok(), "Choosing last current task failed: {}", res_last.unwrap_err());
+            prop_assert!(res_first.is_ok(), "Choosing first current task failed: {}", res_first.unwrap_err());
+            prop_assert!(res_last.is_ok(), "Choosing last current task failed: {}", res_last.unwrap_err());
         }
         else {
-            assert_no_task_found_error(res_first);
-            assert_no_task_found_error(res_last);
+            prop_assert_no_task_found_error(res_first)?;
+            prop_assert_no_task_found_error(res_last)?;
         }
 
     }

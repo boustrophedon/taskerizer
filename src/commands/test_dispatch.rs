@@ -102,7 +102,7 @@ proptest! {
             cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
             let current = db.get_current_task().expect("Failed getting current task from db");
-            assert!(current.is_some(), "No current task after running Add command");
+            prop_assert!(current.is_some(), "No current task after running Add command");
 
             let current = current.unwrap();
             prop_assert_eq!(&current, &task); // note that this is the first task, from arb_task()

@@ -169,7 +169,7 @@ mod test {
         /// character, no null bytes, and priority at least 1.
         fn test_task_valid_arb_task(task in "[^\x00]+", priority in 1u32.., reward in any::<bool>()) {
             let res = Task::from_parts(task, priority, reward);
-            assert!(res.is_ok(), "Task made from good parts returned an error: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Task made from good parts returned an error: {}", res.unwrap_err());
         }
     }
 }

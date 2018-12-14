@@ -116,36 +116,36 @@ proptest! {
         // add tasks
         for task in &all_tasks {
             let res = tx.add_task(&task);
-            assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
         }
 
         // get tasks
         let res = tx.get_tasks();
-        assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
         let res = tx.get_breaks();
-        assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // verify number of tasks
         let expected = all_tasks.len();
         let got = tasks.len() + breaks.len();
-        assert!(expected == got, "Number of tasks returned from db not the same as added: expected {} got {}", expected, got);
+        prop_assert!(expected == got, "Number of tasks returned from db not the same as added: expected {} got {}", expected, got);
 
         // verify every task made it back
         for task in &all_tasks {
             if tasks.contains(task) {
-                assert!(!task.is_break(), "Task was in tasks list but was a break: {:?}", task);
-                assert!(!breaks.contains(task), "Task was a task but was in breaks list as well: {:?}", task);
+                prop_assert!(!task.is_break(), "Task was in tasks list but was a break: {:?}", task);
+                prop_assert!(!breaks.contains(task), "Task was a task but was in breaks list as well: {:?}", task);
             }
             else if breaks.contains(task) {
-                assert!(task.is_break(), "Task was in breaks but was not a break: {:?}", task);
-                assert!(!tasks.contains(task), "Task was a break but was in tasks list as well: {:?}", task);
+                prop_assert!(task.is_break(), "Task was in breaks but was not a break: {:?}", task);
+                prop_assert!(!tasks.contains(task), "Task was a break but was in tasks list as well: {:?}", task);
             }
             else {
-                assert!(false, "Input task was not present in db: {:?}", task);
+                prop_assert!(false, "Input task was not present in db: {:?}", task);
             }
         }
 
@@ -154,17 +154,17 @@ proptest! {
         let tx = db.transaction().unwrap();
         // get tasks
         let res = tx.get_tasks();
-        assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
         let res = tx.get_breaks();
-        assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // verify no tasks
         let got = tasks.len() + breaks.len();
-        assert!(0 == got, "Got tasks even after rolling back: got {}", got);
+        prop_assert!(0 == got, "Got tasks even after rolling back: got {}", got);
     }
 }
 
@@ -177,36 +177,36 @@ proptest! {
         // add tasks
         for task in &all_tasks {
             let res = tx.add_task(&task);
-            assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Adding task failed: {}", res.unwrap_err());
         }
 
         // get tasks
         let res = tx.get_tasks();
-        assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
         let res = tx.get_breaks();
-        assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|(_,t)| t).collect();
 
         // verify number of tasks
         let expected = all_tasks.len();
         let got = tasks.len() + breaks.len();
-        assert!(expected == got, "Number of tasks returned from db not the same as added: expected {} got {}", expected, got);
+        prop_assert!(expected == got, "Number of tasks returned from db not the same as added: expected {} got {}", expected, got);
 
         // verify every task made it back
         for task in &all_tasks {
             if tasks.contains(task) {
-                assert!(!task.is_break(), "Task was in tasks list but was a break: {:?}", task);
-                assert!(!breaks.contains(task), "Task was a task but was in breaks list as well: {:?}", task);
+                prop_assert!(!task.is_break(), "Task was in tasks list but was a break: {:?}", task);
+                prop_assert!(!breaks.contains(task), "Task was a task but was in breaks list as well: {:?}", task);
             }
             else if breaks.contains(task) {
-                assert!(task.is_break(), "Task was in breaks but was not a break: {:?}", task);
-                assert!(!tasks.contains(task), "Task was a break but was in tasks list as well: {:?}", task);
+                prop_assert!(task.is_break(), "Task was in breaks but was not a break: {:?}", task);
+                prop_assert!(!tasks.contains(task), "Task was a break but was in tasks list as well: {:?}", task);
             }
             else {
-                assert!(false, "Input task was not present in db: {:?}", task);
+                prop_assert!(false, "Input task was not present in db: {:?}", task);
             }
         }
 
@@ -215,32 +215,32 @@ proptest! {
         let tx = db.transaction().unwrap();
         // get tasks
         let res = tx.get_tasks();
-        assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
         let res = tx.get_breaks();
-        assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // same verifications as above
         // verify number of tasks
         let expected = all_tasks.len();
         let got = tasks.len() + breaks.len();
-        assert!(expected == got, "Number of tasks returned from db not the same as added: expected {} got {}", expected, got);
+        prop_assert!(expected == got, "Number of tasks returned from db not the same as added: expected {} got {}", expected, got);
 
         // verify every task made it back
         for task in &all_tasks {
             if tasks.contains(task) {
-                assert!(!task.is_break(), "Task was in tasks list but was a break: {:?}", task);
-                assert!(!breaks.contains(task), "Task was a task but was in breaks list as well: {:?}", task);
+                prop_assert!(!task.is_break(), "Task was in tasks list but was a break: {:?}", task);
+                prop_assert!(!breaks.contains(task), "Task was a task but was in breaks list as well: {:?}", task);
             }
             else if breaks.contains(task) {
-                assert!(task.is_break(), "Task was in breaks but was not a break: {:?}", task);
-                assert!(!tasks.contains(task), "Task was a break but was in tasks list as well: {:?}", task);
+                prop_assert!(task.is_break(), "Task was in breaks but was not a break: {:?}", task);
+                prop_assert!(!tasks.contains(task), "Task was a break but was in tasks list as well: {:?}", task);
             }
             else {
-                assert!(false, "Input task was not present in db: {:?}", task);
+                prop_assert!(false, "Input task was not present in db: {:?}", task);
             }
         }
     }
