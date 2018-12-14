@@ -21,6 +21,8 @@ deduplicate task validation code in Add struct and Task::from_parts
 
 deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks}
 
+remove use of prop_assert test helper functions from non-proptests
+
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
 	- this makes tests somewhat fragile
