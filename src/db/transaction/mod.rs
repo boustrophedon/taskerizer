@@ -28,6 +28,10 @@ pub trait DBTransaction {
     /// database. This function should never return None if there are tasks in the database.
     fn get_current_task(&self) -> Result<Option<Task>, Error>;
 
+    /// Remove the given task from the tasks table of the database. This operation will produce an
+    /// error if the task is set as the current task and it is removed.
+    fn remove_task(&self, id: &RowId) -> Result<(), Error>;
+
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
     fn commit(self) -> Result<(), Error>;
@@ -154,6 +158,23 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         }
         // if there are no rows, return Ok(None)
         return Ok(None);
+    }
+
+    fn remove_task(&self, id: &RowId) -> Result<(), Error> {
+        let tx = &self.transaction;
+        let rows_modified = tx.execute_named(
+            "DELETE FROM tasks
+            WHERE
+                id = :task_id",
+            &[(":task_id", &id.id)])
+            .map_err(|e| format_err!("Error deleting task: {}", e))?;
+        if rows_modified == 0 {
+            return Err(format_err!("Error deleting task: No rows were deleted."));
+        }
+        else if rows_modified > 1 {
+            return Err(format_err!("Error deleting task: More than one row was deleted: {}.", rows_modified));
+        }
+        Ok(())
     }
 
     fn commit(self) -> Result<(), Error> {

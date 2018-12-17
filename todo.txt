@@ -1,6 +1,9 @@
 current todo:
+	- implement tx::remove_task for use in complete command
 	- refactoring of dbbackend operations using transactions
 	- display current task in output of list command with asterisk or something
+	- refactor the "choose new current" implementation in TKZCmd::run
+		see below and notes.md, lift out the select_task code into a selectionstrategy and then we can test them independently
 
 implement database operations:
 	- decide which operation to implement next
