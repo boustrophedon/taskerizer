@@ -34,6 +34,17 @@ pub trait DBTransaction {
     /// database. This function should never return None if there are tasks in the database.
     fn get_current_task(&self) -> Result<Option<Task>, Error>;
 
+    /// Returns the `RowId` of the currently selected task if there is one, or None if there are no
+    /// tasks in the database. The current task is then set to None, but the task itself is not
+    /// removed from the database. This function should never return None if there are tasks in the
+    /// database.
+    ///
+    /// # Invariants
+    /// The current task is set to None, so it must be set to something else via
+    /// `DBTransaction::set_current_task` by the end of the transaction if there are other tasks in
+    /// the database.
+    fn pop_current_task(&self) -> Result<Option<RowId>, Error>;
+
     /// Remove the given task from the tasks table of the database. This operation will produce an
     /// error if the task is set as the current task and it is removed.
     fn remove_task(&self, id: &RowId) -> Result<(), Error>;
@@ -164,6 +175,47 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         }
         // if there are no rows, return Ok(None)
         return Ok(None);
+    }
+
+    fn pop_current_task(&self) -> Result<Option<RowId>, Error> {
+        let tx = &self.transaction;
+        let mut stmt = tx.prepare_cached(
+            "SELECT task_id FROM current
+            WHERE id = 1
+            ")
+            .map_err(|e| format_err!("Error preparing pop current task query: {}", e))?;
+
+        let rows: Vec<_> = stmt.query_map(&[], |row| {
+                RowId { id: row.get(0), _transaction: PhantomData }
+             })
+            .map_err(|e| format_err!("Error executing pop current task query: {}", e))?
+            .collect();
+
+        // if there are no rows i.e. no current task, return None
+        if rows.len() == 0 {
+            return Ok(None);
+        }
+        if rows.len() > 1 {
+            return Err(format_err!("Multiple tasks selected in pop current task query. {} tasks, selected {:?}", rows.len(), rows))
+        }
+
+        let current_rowid = rows.into_iter().next()
+            .expect("No rows even though we checked there was one")
+            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+
+        let rows_modified = tx.execute(
+            "DELETE FROM current
+            WHERE id = 1
+            ", &[])
+            .map_err(|e| format_err!("Error unsetting current task: {}", e))?;
+        if rows_modified == 0 {
+            return Err(format_err!("Error unsetting task: No rows were deleted."));
+        }
+        else if rows_modified > 1 {
+            return Err(format_err!("Error unsetting task: More than one row was deleted: {}.", rows_modified));
+        }
+
+        return Ok(Some(current_rowid));
     }
 
     fn remove_task(&self, id: &RowId) -> Result<(), Error> {
