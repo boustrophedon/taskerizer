@@ -5,7 +5,13 @@ use crate::db::SqliteTransaction;
 
 use crate::task::Task;
 
-#[derive(Debug, Clone, Copy)]
+// FIXME: i'm kind of wary of allowing PartialEq and Eq to be derived for RowId because ideally
+// they shouldn't need to be compared, but I did it to make the tests simpler. 
+// Since their lifetime is tied to a transaction, ideally it shouldn't be a problem (and in fact
+// it would be nice if a db guaranteed that rowids aren't reused within a transaction) but
+// technically I guess something could go wrong.
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RowId<'tx, 'conn: 'tx> {
     id: i32,
     _transaction: PhantomData<&'tx SqliteTransaction<'conn>>
