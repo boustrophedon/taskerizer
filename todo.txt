@@ -13,6 +13,10 @@ implement database operations:
 
 change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
 
+document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
+
+make it clear that tx::RowIds are only for the tasks table, or just rename it to TaskRowId or TaskId
+
 ** Add user auth struct to parameters for db.
 	- on local db it should be like 0 or whatever
 	- otherwise, we get it from a function like `DBBackend::auth_user(user_id: usize, user_pass: String) -> Result<Option(UserAuth), Error>` which returns Ok(Some(UserAuth)) if there were no errors and the auth was valid, or Ok(None) if the auth was not valid. and error if there's a db error.
