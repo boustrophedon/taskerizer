@@ -1,6 +1,6 @@
 use failure::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Task representation.
 pub struct Task {
     task: String,
