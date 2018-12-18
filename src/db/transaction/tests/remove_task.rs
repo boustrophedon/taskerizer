@@ -169,12 +169,14 @@ fn test_tx_remove_task_list() {
     }
 }
 
+use proptest::test_runner::Config;
 proptest! {
+    #![proptest_config(Config::with_cases(75))]
+    #[test]
     /// Add all tasks in example list, remove and commit one at a time and make sure correct task is
     /// removed. We do this by checking that all of the other tasks are still there, because we can
     /// have duplicates in the db. We could compare RowIds but that's fragile. TODO: add UUIDs to
     /// tasks and check those.
-    #[test]
     fn test_tx_remove_task_arb(example_tasks in arb_task_list_bounded()) {
         let mut db = open_test_db();
         let tx = db.transaction().unwrap();
