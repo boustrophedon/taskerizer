@@ -5,6 +5,7 @@ use crate::db::DBTransaction;
 use crate::task::Task;
 
 use rusqlite::Result as SQLResult;
+use rusqlite::NO_PARAMS;
 
 pub trait DBBackend {
     /// Get metadata about database
@@ -57,7 +58,7 @@ impl DBBackend for SqliteBackend {
 
         let (version, date_created) = tx.query_row(
             "SELECT version, date_created FROM metadata WHERE id = 1",
-            &[],
+            NO_PARAMS,
             |row| {
                 let version = row.get(0);
                 let date_created = row.get(1);
@@ -150,7 +151,7 @@ impl DBBackend for SqliteBackend {
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
         // TODO there should probably be a better way to do this.
-        let mut rows: Vec<SQLResult<Result<Task, Error>>> = stmt.query_map(&[], |row| {
+        let mut rows: Vec<SQLResult<Result<Task, Error>>> = stmt.query_map(NO_PARAMS, |row| {
                 Task::from_parts(row.get(0), row.get(1), row.get(2))
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use chrono::Utc;
-use rusqlite::Connection;
+use rusqlite::{Connection, NO_PARAMS};
 use failure::Error;
 
 use crate::db::SqliteBackend;
@@ -66,7 +66,7 @@ impl SqliteBackend {
 
         conn.execute(
             "PRAGMA foreign_keys = ON;",
-            &[]
+            NO_PARAMS,
         ).map_err(|e| format_err!("Could not enable foreign keys pragma: {}", e))?;
 
         Ok(())
@@ -81,7 +81,7 @@ impl SqliteBackend {
                 version TEXT NOT NULL,
                 date_created TEXT NOT NULL
             )",
-            &[]
+            NO_PARAMS,
         ).map_err(|e| format_err!("Could not create metadata table: {}", e))?;
 
         let date_created = Utc::now().to_rfc3339();
@@ -92,7 +92,7 @@ impl SqliteBackend {
                 ?1,
                 ?2
             )",
-            &[&version, &date_created]
+            &[&version, date_created.as_str()]
         ).map_err(|e| format_err!("Could not insert metadata into database: {}", e))?;
 
         Ok(())
@@ -108,7 +108,7 @@ impl SqliteBackend {
                 priority INTEGER NOT NULL,
                 category INTEGER NOT NULL
             );",
-            &[]
+            NO_PARAMS,
         ).map_err(|e| format_err!("Could not create tasks table: {}", e))?;
 
         Ok(())
@@ -123,7 +123,7 @@ impl SqliteBackend {
 					task_id INTEGER NOT NULL,
 					FOREIGN KEY (task_id) REFERENCES tasks(id)
 			);",
-			&[]
+			NO_PARAMS,
 		).map_err(|e| format_err!("Could not create current task table: {}", e))?;
 
 		Ok(())

@@ -5,6 +5,8 @@ use crate::db::SqliteTransaction;
 
 use crate::task::Task;
 
+use rusqlite::NO_PARAMS;
+
 // FIXME: i'm kind of wary of allowing PartialEq and Eq to be derived for RowId because ideally
 // they shouldn't need to be compared, but I did it to make the tests simpler. 
 // Since their lifetime is tied to a transaction, ideally it shouldn't be a problem (and in fact
@@ -84,7 +86,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
              priority ASC
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
-        let rows = stmt.query_map(&[], |row| {
+        let rows = stmt.query_map(NO_PARAMS, |row| {
                 let rowid = RowId { id: row.get(0), _transaction: PhantomData };
                 let task = Task::from_parts(row.get(1), row.get(2), row.get(3));
                 (rowid, task)
@@ -112,7 +114,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
              priority ASC
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
-        let rows = stmt.query_map(&[], |row| {
+        let rows = stmt.query_map(NO_PARAMS, |row| {
                 let rowid = RowId { id: row.get(0), _transaction: PhantomData };
                 let task = Task::from_parts(row.get(1), row.get(2), row.get(3));
                 (rowid, task)
@@ -158,7 +160,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             ")
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
-        let rows: Vec<_> = stmt.query_map(&[], |row| {
+        let rows: Vec<_> = stmt.query_map(NO_PARAMS, |row| {
                 Task::from_parts(row.get(0), row.get(1), row.get(2))
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?
@@ -185,7 +187,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             ")
             .map_err(|e| format_err!("Error preparing pop current task query: {}", e))?;
 
-        let rows: Vec<_> = stmt.query_map(&[], |row| {
+        let rows: Vec<_> = stmt.query_map(NO_PARAMS, |row| {
                 RowId { id: row.get(0), _transaction: PhantomData }
              })
             .map_err(|e| format_err!("Error executing pop current task query: {}", e))?
@@ -206,7 +208,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         let rows_modified = tx.execute(
             "DELETE FROM current
             WHERE id = 1
-            ", &[])
+            ", NO_PARAMS)
             .map_err(|e| format_err!("Error unsetting current task: {}", e))?;
         if rows_modified == 0 {
             return Err(format_err!("Error unsetting task: No rows were deleted."));
