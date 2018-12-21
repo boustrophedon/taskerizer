@@ -10,7 +10,7 @@ fn test_db_list_empty() {
     let mut db = open_test_db();
 
     // get nothing from db
-    let res = db.get_all_tasks();
+    let res = db.fetch_all_tasks();
     assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
     let db_tasks = res.unwrap();
 
@@ -25,7 +25,7 @@ fn test_db_list_invalid_task_empty() {
     let task = Task::example_invalid_empty_desc();
     db.add_task(&task).expect("Adding task failed");
 
-    let res = db.get_all_tasks();
+    let res = db.fetch_all_tasks();
     assert!(res.is_err(), "No error when trying to deserialize invalid task: {:?}", res);
 
     let err = res.unwrap_err();
@@ -39,7 +39,7 @@ fn test_db_list_invalid_task_zero_priority() {
     let task = Task::example_invalid_zero_priority();
     db.add_task(&task).expect("Adding task failed");
 
-    let res = db.get_all_tasks();
+    let res = db.fetch_all_tasks();
     assert!(res.is_err(), "No error when trying to deserialize invalid task: {:?}", res);
 
     let err = res.unwrap_err();
@@ -60,7 +60,7 @@ fn test_db_list_added_manually() {
     }
 
     // get tasks back from db
-    let res = db.get_all_tasks();
+    let res = db.fetch_all_tasks();
     assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
     let db_tasks = res.unwrap();
 
@@ -86,7 +86,7 @@ proptest! {
         }
 
         // get tasks back
-        let res = db.get_all_tasks();
+        let res = db.fetch_all_tasks();
         prop_assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
         let db_tasks = res.unwrap();
 

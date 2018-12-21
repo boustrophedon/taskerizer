@@ -11,7 +11,7 @@ use proptest::test_runner::TestCaseError;
 fn assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &str) {
     db.choose_current_task(p, expected_task.is_break()).expect("Failed choosing current task");
 
-    let res = db.get_current_task();
+    let res = db.fetch_current_task();
     assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -25,7 +25,7 @@ fn assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &
 fn prop_assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, msg: &str) -> Result<(), TestCaseError> {
     db.choose_current_task(p, expected_task.is_break()).expect("Failed choosing current task");
 
-    let res = db.get_current_task();
+    let res = db.fetch_current_task();
     prop_assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -39,10 +39,10 @@ fn prop_assert_task_at_p(db: &mut SqliteBackend, p: f32, expected_task: &Task, m
 
 
 #[test]
-fn test_db_get_current_no_tasks() {
+fn test_db_fetch_current_no_tasks() {
     let mut db = open_test_db();
 
-    let res = db.get_current_task();
+    let res = db.fetch_current_task();
     assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
 
     let no_task = res.unwrap();
@@ -50,7 +50,7 @@ fn test_db_get_current_no_tasks() {
 }
 
 #[test]
-fn test_db_get_current_one_task() {
+fn test_db_fetch_current_one_task() {
     let mut db = open_test_db();
     
     db.add_task(&example_task_1()).expect("Failed adding task to db in test");
@@ -67,7 +67,7 @@ fn test_db_get_current_one_task() {
 }
 
 #[test]
-fn test_db_get_current_one_break() {
+fn test_db_fetch_current_one_break() {
     let mut db = open_test_db();
     
     db.add_task(&example_task_break_1()).expect("Failed adding task to db in test");
@@ -84,7 +84,7 @@ fn test_db_get_current_one_break() {
 }
 
 #[test]
-fn test_db_get_current_task_vs_break() {
+fn test_db_fetch_current_task_vs_break() {
     let mut db = open_test_db();
     
     db.add_task(&example_task_1()).expect("Failed adding task to db in test");
@@ -104,7 +104,7 @@ fn test_db_get_current_task_vs_break() {
 }
 
 #[test]
-fn test_db_get_current_ordering_two() {
+fn test_db_fetch_current_ordering_two() {
     let mut db = open_test_db();
 
     // two tasks with equal priority but names are different, second is exactly the same but ends
@@ -124,7 +124,7 @@ fn test_db_get_current_ordering_two() {
 }
 
 #[test]
-fn test_db_get_current_two_max_u32() {
+fn test_db_fetch_current_two_max_u32() {
     let mut db = open_test_db();
 
     let task1 = Task::from_parts("a".to_string(), u32::max_value(), false).unwrap();
@@ -146,7 +146,7 @@ fn test_db_get_current_two_max_u32() {
 // TODO this test could be better probably. 
 proptest! {
     #[test]
-    fn test_db_get_current_arb(tasks in arb_task_list()) {
+    fn test_db_fetch_current_arb(tasks in arb_task_list()) {
         let mut db = open_test_db();
 
         for task in &tasks {

@@ -97,7 +97,7 @@ impl TKZCmd {
             _ => unimplemented!(),
         };
 
-        let current_task = db.get_current_task()
+        let current_task = db.fetch_current_task()
             .map_err(|err| format_err!("Error getting current task while choosing new task after executing command: {}", err))?;
         // if there is no current task, choose a new one.
         if current_task.is_none() {
@@ -109,7 +109,7 @@ impl TKZCmd {
     }
 
     fn choose_new_current(&self, db: &mut impl DBBackend, task_p: f32, category_p: f32, break_cutoff: f32) -> Result<(), Error> {
-        let tasks = db.get_all_tasks()
+        let tasks = db.fetch_all_tasks()
             .map_err(|err| format_err!("Failed to get tasks while choosing new task after executing command: {}", err))?;
         let num_breaks = tasks.iter().filter(|&t| t.is_break()).count();
         let num_tasks = tasks.len() - num_breaks;

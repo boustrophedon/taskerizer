@@ -17,19 +17,19 @@ fn test_tx_remove_task() {
     tx.commit().expect("Commiting failed");
 
     let tx = db.transaction().unwrap();
-    let tasks = tx.get_tasks().expect("Getting tasks failed");
+    let tasks = tx.fetch_tasks().expect("Getting tasks failed");
 
     let first_id = tasks[0].0;
     let res = tx.remove_task(&first_id);
     assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
 
-    let tasks = tx.get_tasks().expect("Getting tasks failed");
+    let tasks = tx.fetch_tasks().expect("Getting tasks failed");
     assert!(tasks.len() == 0, "Incorrect number of tasks in db, expected 0, got {}", tasks.len());
 
     tx.rollback().expect("Rolling back failed");
 
     let tx = db.transaction().unwrap();
-    let tasks = tx.get_tasks().expect("Getting tasks failed");
+    let tasks = tx.fetch_tasks().expect("Getting tasks failed");
     assert!(tasks.len() == 1, "Incorrect number of tasks in db, expected 1, got {}", tasks.len());
 }
 
@@ -46,8 +46,8 @@ fn test_tx_remove_task_current_empty_db() {
     tx.add_task(&task).expect("Adding task failed");
     tx.add_task(&brk).expect("Adding task failed");
     
-    let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-    let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+    let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+    let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
     let all_db_tasks: Vec<_> = db_tasks.into_iter().chain(db_breaks).collect();
 
     // set current task to first one
@@ -65,8 +65,8 @@ fn test_tx_remove_task_current_empty_db() {
 
     // assert db is empty now, as the tasks and removal were in the same transaction
     let tx = db.transaction().unwrap();
-    let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-    let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+    let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+    let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
     let all_db_tasks: Vec<_> = db_tasks.into_iter().chain(db_breaks).collect();
 
     assert!(all_db_tasks.len() == 0, "Tasks were in db even after rolling back: {:?}", all_db_tasks);
@@ -88,8 +88,8 @@ fn test_tx_remove_task_current_with_tasks() {
 
 
     let tx = db.transaction().unwrap();
-    let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-    let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+    let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+    let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
     let all_db_tasks: Vec<_> = db_tasks.into_iter().chain(db_breaks).collect();
 
     // set current task to second one
@@ -107,8 +107,8 @@ fn test_tx_remove_task_current_with_tasks() {
 
     // assert db is empty now, as the tasks and removal were in the same transaction
     let tx = db.transaction().unwrap();
-    let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-    let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+    let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+    let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
     let all_db_tasks: Vec<_> = db_tasks.into_iter().chain(db_breaks).collect();
 
     assert!(all_db_tasks.len() == 2, "Tasks were removed from db even though we rolled back: {:?}", all_db_tasks);
@@ -136,8 +136,8 @@ fn test_tx_remove_task_list() {
     while remaining_tasks.len() > 0 {
         // get the tasks from the db and arbitrarily pick the first one to remove
         let tx = db.transaction().unwrap();
-        let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-        let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+        let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+        let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
         let next_db_task = db_tasks.into_iter()
             .chain(db_breaks.into_iter())
             .next().unwrap();
@@ -150,8 +150,8 @@ fn test_tx_remove_task_list() {
 
         // get the remaining tasks from the db
         let tx = db.transaction().unwrap();
-        let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-        let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+        let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+        let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
         let remaining_db_tasks: Vec<_> = db_tasks.into_iter().map(|t| t.1)
             .chain(db_breaks.into_iter().map(|t| t.1))
             .collect();
@@ -192,8 +192,8 @@ proptest! {
         while remaining_tasks.len() > 0 {
             // get the tasks from the db and arbitrarily pick the first one to remove
             let tx = db.transaction().unwrap();
-            let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-            let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+            let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+            let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
             let next_db_task = db_tasks.into_iter()
                 .chain(db_breaks.into_iter())
                 .next().unwrap();
@@ -206,8 +206,8 @@ proptest! {
            
             // get the remaining tasks from the db
             let tx = db.transaction().unwrap();
-            let db_tasks = tx.get_tasks().expect("Getting tasks failed");
-            let db_breaks = tx.get_breaks().expect("Getting breaks failed");
+            let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
+            let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
             let remaining_db_tasks: Vec<_> = db_tasks.into_iter().map(|t| t.1)
                 .chain(db_breaks.into_iter().map(|t| t.1))
                 .collect();

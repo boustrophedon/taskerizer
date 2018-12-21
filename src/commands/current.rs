@@ -21,7 +21,7 @@ fn format_category(task: &Task) -> String {
 
 impl Subcommand for Current {
     fn run(&self, db: &mut impl DBBackend) -> Result<Vec<String>, Error> {
-        let res = db.get_current_task()
+        let res = db.fetch_current_task()
             .map_err(|e| format_err!("Could not get current task from database. {}", e))?;
        
         if let Some(current) = res {

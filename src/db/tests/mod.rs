@@ -8,7 +8,7 @@ use crate::db::{SqliteBackend, DBBackend};
 
 mod add;
 mod choose_current;
-mod get_current;
+mod fetch_current;
 mod list;
 
 // utility functions

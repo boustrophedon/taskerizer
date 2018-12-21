@@ -3,7 +3,7 @@ use crate::db::tests::open_test_db;
 
 use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
-// these tests were mostly copied from the get_current_task tests
+// these tests were mostly copied from the fetch_current_task tests
 
 #[test]
 fn test_tx_pop_current_task_empty() {
@@ -29,7 +29,7 @@ fn test_tx_pop_current_task_1() {
     tx.add_task(&reward).unwrap();
 
     // get the task we inserted and set it as the current task
-    let id = tx.get_tasks().unwrap()[0].0;
+    let id = tx.fetch_tasks().unwrap()[0].0;
     tx.set_current_task(&id).unwrap();
 
     // pop the current task and verify it's the one we set
@@ -55,7 +55,7 @@ fn test_tx_pop_current_task_2() {
     tx.add_task(&reward).unwrap();
 
     // get the break we inserted and set it as the current task
-    let id = tx.get_breaks().unwrap()[0].0;
+    let id = tx.fetch_breaks().unwrap()[0].0;
     tx.set_current_task(&id).unwrap();
 
     // pop the current task and verify it's the one we set
@@ -81,8 +81,8 @@ proptest! {
         }
         
         // get tasks and breaks
-        let db_tasks = tx.get_tasks().unwrap();
-        let db_breaks = tx.get_breaks().unwrap();
+        let db_tasks = tx.fetch_tasks().unwrap();
+        let db_breaks = tx.fetch_breaks().unwrap();
         let all_db_tasks = db_tasks.into_iter().chain(db_breaks);
 
         // set each task and break to current and check we get back the right one

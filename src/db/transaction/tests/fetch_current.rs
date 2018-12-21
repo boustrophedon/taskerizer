@@ -4,11 +4,11 @@ use crate::db::tests::open_test_db;
 use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
 #[test]
-fn test_tx_get_current_task_empty() {
+fn test_tx_fetch_current_task_empty() {
     let mut db = open_test_db();
     let tx = db.transaction().unwrap();
 
-    let res = tx.get_current_task();
+    let res = tx.fetch_current_task();
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -16,7 +16,7 @@ fn test_tx_get_current_task_empty() {
 }
 
 #[test]
-fn test_tx_get_current_task_1() {
+fn test_tx_fetch_current_task_1() {
     let task = example_task_1();
     let reward = example_task_break_1();
 
@@ -27,11 +27,11 @@ fn test_tx_get_current_task_1() {
     tx.add_task(&reward).unwrap();
 
     // get the task we inserted and set it as the current task
-    let id = &tx.get_tasks().unwrap()[0].0;
+    let id = &tx.fetch_tasks().unwrap()[0].0;
     tx.set_current_task(id).unwrap();
 
     // get the current task and verify it's the one we set
-    let res = tx.get_current_task(); 
+    let res = tx.fetch_current_task(); 
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -42,7 +42,7 @@ fn test_tx_get_current_task_1() {
 }
 
 #[test]
-fn test_tx_get_current_task_2() {
+fn test_tx_fetch_current_task_2() {
     let task = example_task_1();
     let reward = example_task_break_1();
 
@@ -53,11 +53,11 @@ fn test_tx_get_current_task_2() {
     tx.add_task(&reward).unwrap();
 
     // get the break we inserted and set it as the current task
-    let id = &tx.get_breaks().unwrap()[0].0;
+    let id = &tx.fetch_breaks().unwrap()[0].0;
     tx.set_current_task(id).unwrap();
 
     // get the current task and verify it's the one we set
-    let res = tx.get_current_task(); 
+    let res = tx.fetch_current_task(); 
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -69,7 +69,7 @@ fn test_tx_get_current_task_2() {
 
 proptest! {
     #[test]
-    fn test_tx_get_current_task_arb(tasks in arb_task_list()) {
+    fn test_tx_fetch_current_task_arb(tasks in arb_task_list()) {
         // open db, insert all tasks
         let mut db = open_test_db();
         let tx = db.transaction().unwrap();
@@ -79,8 +79,8 @@ proptest! {
         }
         
         // get tasks and breaks
-        let db_tasks = tx.get_tasks().unwrap();
-        let db_breaks = tx.get_breaks().unwrap();
+        let db_tasks = tx.fetch_tasks().unwrap();
+        let db_breaks = tx.fetch_breaks().unwrap();
         let all_db_tasks = db_tasks.into_iter().chain(db_breaks);
 
         // set each task and break to current and check we get back the right one
@@ -88,7 +88,7 @@ proptest! {
             tx.set_current_task(&id).unwrap();
 
             // verify we get back the one we set
-            let res = tx.get_current_task(); 
+            let res = tx.fetch_current_task(); 
             prop_assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
             let task_opt = res.unwrap();

@@ -23,7 +23,7 @@ fn test_runcmd_add_current() {
 
     cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
-    let current = db.get_current_task().expect("Failed getting current task from db");
+    let current = db.fetch_current_task().expect("Failed getting current task from db");
     assert!(current.is_some(), "No current task after running Add command");
 
     let current = current.unwrap();
@@ -41,7 +41,7 @@ fn test_runcmd_add_multiple_current() {
 
     cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
-    let current = db.get_current_task().expect("Failed getting current task from db");
+    let current = db.fetch_current_task().expect("Failed getting current task from db");
     assert!(current.is_some(), "No current task after running Add command");
 
     let current = current.unwrap();
@@ -52,7 +52,7 @@ fn test_runcmd_add_multiple_current() {
         let cmd = add_from_task(&other_task);
         cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
-        let current = db.get_current_task().expect("Failed getting current task from db");
+        let current = db.fetch_current_task().expect("Failed getting current task from db");
         assert!(current.is_some(), "No current task after running Add command");
 
         let current = current.unwrap();
@@ -72,7 +72,7 @@ proptest! {
 
         cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
-        let current = db.get_current_task().expect("Failed getting current task from db");
+        let current = db.fetch_current_task().expect("Failed getting current task from db");
         prop_assert!(current.is_some(), "No current task after running Add command");
 
         let current = current.unwrap();
@@ -90,7 +90,7 @@ proptest! {
 
         cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
-        let current = db.get_current_task().expect("Failed getting current task from db");
+        let current = db.fetch_current_task().expect("Failed getting current task from db");
         prop_assert!(current.is_some(), "No current task after running Add command");
 
         let current = current.unwrap();
@@ -101,7 +101,7 @@ proptest! {
             let cmd = add_from_task(&other_task);
             cmd.run(&mut db, FIRST_TASK).expect("Add command failed");
 
-            let current = db.get_current_task().expect("Failed getting current task from db");
+            let current = db.fetch_current_task().expect("Failed getting current task from db");
             prop_assert!(current.is_some(), "No current task after running Add command");
 
             let current = current.unwrap();

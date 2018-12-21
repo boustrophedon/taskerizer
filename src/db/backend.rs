@@ -15,7 +15,7 @@ pub trait DBBackend {
     fn add_task(&mut self, task: &Task) -> Result<(), Error>;
 
     /// Return a `Vec` of all tasks from the database
-    fn get_all_tasks(&mut self) -> Result<Vec<Task>, Error>;
+    fn fetch_all_tasks(&mut self) -> Result<Vec<Task>, Error>;
 
     /// Choose a new task at random to be the current task. Note that if the existing current task is not
     /// removed, it may be selected again. `p` is a parameter that must be between 0 and 1 which
@@ -29,7 +29,7 @@ pub trait DBBackend {
 
     /// Returns the currently selected task if there is one, or None if there are no tasks in the
     /// database.  This function should never return None if there are tasks in the database.
-    fn get_current_task(&mut self) -> Result<Option<Task>, Error>;
+    fn fetch_current_task(&mut self) -> Result<Option<Task>, Error>;
 
     /// Close the database. This is not really required due to the implementation of Drop for the
     /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
@@ -41,7 +41,7 @@ pub trait DBBackend {
 // the network) to make a db error type so that we can distinguish them - eg retrying a network
 // query later.
 
-// TODO use get_checked instead of get when deserializing rows. i feel like there should be a
+// TODO use get_checked() instead of get() when deserializing rows. i feel like there should be a
 // functional way to do it so that we get a Result<T> at the end. in particular the error messages
 // are bad - they should be something like format_err!("error trying to deserialize foo field from database
 // row: {}", e) but there should be a way to do it without writing that out every time, instead
@@ -82,11 +82,11 @@ impl DBBackend for SqliteBackend {
         Ok(())
     }
 
-    fn get_all_tasks(&mut self) -> Result<Vec<Task>, Error> {
+    fn fetch_all_tasks(&mut self) -> Result<Vec<Task>, Error> {
         let tx = self.transaction()?;
-        let tasks = tx.get_tasks()
+        let tasks = tx.fetch_tasks()
             .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?;
-        let breaks = tx.get_breaks()
+        let breaks = tx.fetch_breaks()
             .map_err(|e| format_err!("Failed to get break tasks during transaction: {}", e))?;
 
         // chain tasks followed by breaks into single vector
@@ -109,11 +109,11 @@ impl DBBackend for SqliteBackend {
         let tx = self.transaction()?;
         let tasks = {
             if reward {
-                tx.get_breaks()
+                tx.fetch_breaks()
                     .map_err(|e| format_err!("Failed to get break tasks during transaction: {}", e))?
             }
             else {
-                tx.get_tasks()
+                tx.fetch_tasks()
                     .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?
             }
         };
@@ -132,7 +132,7 @@ impl DBBackend for SqliteBackend {
         Ok(())
     }
 
-    fn get_current_task(&mut self) -> Result<Option<Task>, Error> {
+    fn fetch_current_task(&mut self) -> Result<Option<Task>, Error> {
         let tx = self.connection.transaction()?;
 
         // we will be able to return the task directly without declaring outside the scope once we

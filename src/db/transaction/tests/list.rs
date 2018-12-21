@@ -20,7 +20,7 @@ fn test_tx_list_task_rollback() {
     tx.add_task(&reward).unwrap();
 
     // verify task
-    let res = tx.get_tasks();
+    let res = tx.fetch_tasks();
     assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
 
     let tasks = res.unwrap();
@@ -28,7 +28,7 @@ fn test_tx_list_task_rollback() {
     assert!(tasks[0].1 == task, "Task retrieved from database was incorrect, expected {:?} got {:?}", task, tasks[0].1);
 
     // verify break
-    let res = tx.get_breaks();
+    let res = tx.fetch_breaks();
     assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
 
     let breaks = res.unwrap();
@@ -41,14 +41,14 @@ fn test_tx_list_task_rollback() {
 
     let tx = db.transaction().unwrap();
     // verify no tasks
-    let res = tx.get_tasks();
+    let res = tx.fetch_tasks();
     assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
 
     let tasks = res.unwrap();
     assert!(tasks.len() == 0, "Tasks still in db: tasks expected 0 got {}", tasks.len());
 
     // verify no breaks
-    let res = tx.get_breaks();
+    let res = tx.fetch_breaks();
     assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
 
     let breaks = res.unwrap();
@@ -69,7 +69,7 @@ fn test_tx_list_task_commit() {
     tx.add_task(&reward).unwrap();
 
     // verify task
-    let res = tx.get_tasks();
+    let res = tx.fetch_tasks();
     assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
 
     let tasks = res.unwrap();
@@ -77,7 +77,7 @@ fn test_tx_list_task_commit() {
     assert!(tasks[0].1 == task, "Task retrieved from database was incorrect, expected {:?} got {:?}", task, tasks[0].1);
 
     // verify break
-    let res = tx.get_breaks();
+    let res = tx.fetch_breaks();
     assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
 
     let breaks = res.unwrap();
@@ -91,7 +91,7 @@ fn test_tx_list_task_commit() {
 
     let tx = db.transaction().unwrap();
     // verify task
-    let res = tx.get_tasks();
+    let res = tx.fetch_tasks();
     assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
 
     let tasks = res.unwrap();
@@ -99,7 +99,7 @@ fn test_tx_list_task_commit() {
     assert!(tasks[0].1 == task, "Task retrieved from database was incorrect, expected {:?} got {:?}", task, tasks[0].1);
 
     // verify break
-    let res = tx.get_breaks();
+    let res = tx.fetch_breaks();
     assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
 
     let breaks = res.unwrap();
@@ -120,12 +120,12 @@ proptest! {
         }
 
         // get tasks
-        let res = tx.get_tasks();
+        let res = tx.fetch_tasks();
         prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
-        let res = tx.get_breaks();
+        let res = tx.fetch_breaks();
         prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
@@ -153,12 +153,12 @@ proptest! {
 
         let tx = db.transaction().unwrap();
         // get tasks
-        let res = tx.get_tasks();
+        let res = tx.fetch_tasks();
         prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
-        let res = tx.get_breaks();
+        let res = tx.fetch_breaks();
         prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
@@ -181,12 +181,12 @@ proptest! {
         }
 
         // get tasks
-        let res = tx.get_tasks();
+        let res = tx.fetch_tasks();
         prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
-        let res = tx.get_breaks();
+        let res = tx.fetch_breaks();
         prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|(_,t)| t).collect();
 
@@ -214,12 +214,12 @@ proptest! {
 
         let tx = db.transaction().unwrap();
         // get tasks
-        let res = tx.get_tasks();
+        let res = tx.fetch_tasks();
         prop_assert!(res.is_ok(), "Getting tasks failed: {}", res.unwrap_err());
         let tasks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 
         // get breaks
-        let res = tx.get_breaks();
+        let res = tx.fetch_breaks();
         prop_assert!(res.is_ok(), "Getting breaks failed: {}", res.unwrap_err());
         let breaks: Vec<Task> = res.unwrap().into_iter().map(|t| t.1).collect();
 

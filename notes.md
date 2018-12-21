@@ -526,3 +526,7 @@ other operations get rid of the &self parameter and just take a &DBTransaction a
 ---
 
 also, in server communication we need to either serialize the transaction operations rather than the dbbackend operations or include the current task when communicating with the server, because choosing the current task is nondeterministic. another option is to add the chosen task UUID to the operation log inside `tx::set_current_task` or something.
+
+---
+
+I happened to read https://robatwilliams.github.io/decent-code/ and there was a point made about using the word "get" for getters, and I agreed with it. So why am I using 'get' for a (relatively) expensive database query operation? I will change it.

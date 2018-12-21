@@ -24,17 +24,17 @@ pub trait DBTransaction {
     fn add_task(&self, task: &Task) -> Result<(), Error>;
 
     /// Return a `Vec` of all tasks (non-breaks) from the database. 
-    fn get_tasks(&self) -> Result<Vec<(RowId, Task)>, Error>;
+    fn fetch_tasks(&self) -> Result<Vec<(RowId, Task)>, Error>;
 
     /// Return a `Vec` of all breaks from the database.
-    fn get_breaks(&self) -> Result<Vec<(RowId, Task)>, Error>;
+    fn fetch_breaks(&self) -> Result<Vec<(RowId, Task)>, Error>;
 
     /// Set the current task to be the task with id `id`.
     fn set_current_task(&self, id: &RowId) -> Result<(), Error>;
 
     /// Returns the currently selected task if there is one, or None if there are no tasks in the
     /// database. This function should never return None if there are tasks in the database.
-    fn get_current_task(&self) -> Result<Option<Task>, Error>;
+    fn fetch_current_task(&self) -> Result<Option<Task>, Error>;
 
     /// Returns the `RowId` of the currently selected task if there is one, or None if there are no
     /// tasks in the database. The current task is then set to None, but the task itself is not
@@ -73,7 +73,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn get_tasks(&self) -> Result<Vec<(RowId, Task)>, Error> {
+    fn fetch_tasks(&self) -> Result<Vec<(RowId, Task)>, Error> {
         let tx = &self.transaction;
 
         let mut tasks = Vec::new();
@@ -101,7 +101,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(tasks)
     }
 
-    fn get_breaks(&self) -> Result<Vec<(RowId, Task)>, Error> {
+    fn fetch_breaks(&self) -> Result<Vec<(RowId, Task)>, Error> {
         let tx = &self.transaction;
 
         let mut tasks = Vec::new();
@@ -148,7 +148,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
     }
 
-    fn get_current_task(&self) -> Result<Option<Task>, Error> {
+    fn fetch_current_task(&self) -> Result<Option<Task>, Error> {
         let tx = &self.transaction;
         let mut stmt = tx.prepare_cached(
             "SELECT task, priority, category
