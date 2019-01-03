@@ -16,5 +16,6 @@ extern crate tempfile;
 pub mod commands;
 pub mod config;
 pub mod task;
+pub mod selection;
 
 pub(crate) mod db;
