@@ -1,21 +1,24 @@
 use failure::Error;
-use crate::db::{SqliteBackend, DBMetadata};
-use crate::db::DBTransaction;
+use crate::db::DBMetadata;
+use crate::db::{SqliteTransaction, DBTransaction};
 
 use crate::task::Task;
 
-use rusqlite::Result as SQLResult;
 use rusqlite::NO_PARAMS;
 
 pub trait DBBackend {
     /// Get metadata about database
-    fn metadata(&mut self) -> Result<DBMetadata, Error>;
+    fn metadata(&self) -> Result<DBMetadata, Error>;
 
     /// Add task to database
-    fn add_task(&mut self, task: &Task) -> Result<(), Error>;
+    fn add_task(&self, task: &Task) -> Result<(), Error>;
 
     /// Return a `Vec` of all tasks from the database
-    fn fetch_all_tasks(&mut self) -> Result<Vec<Task>, Error>;
+    fn fetch_all_tasks(&self) -> Result<Vec<Task>, Error>;
+
+    /// Returns the currently selected task if there is one, or None if there are no tasks in the
+    /// database.  This function should never return None if there are tasks in the database.
+    fn fetch_current_task(&self) -> Result<Option<Task>, Error>;
 
     /// Choose a new task at random to be the current task. Note that if the existing current task is not
     /// removed, it may be selected again. `p` is a parameter that must be between 0 and 1 which
@@ -25,15 +28,12 @@ pub trait DBBackend {
     ///
     /// TODO: specify the ordering more precisely by making the secondary sort key after priority
     /// something like date added. currently the task list is sorted by priority and then text.
-    fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error>;
+    fn choose_current_task(&self, p: f32, reward: bool) -> Result<(), Error>;
 
-    /// Returns the currently selected task if there is one, or None if there are no tasks in the
-    /// database.  This function should never return None if there are tasks in the database.
-    fn fetch_current_task(&mut self) -> Result<Option<Task>, Error>;
+    /// Finish database operations, committing to the database. If this is not called, the
+    /// transaction is rolled back.
+    fn finish(self) -> Result<(), Error>;
 
-    /// Close the database. This is not really required due to the implementation of Drop for the
-    /// Sqlite connection, but it might be necessary for other implementations e.g. a mock.
-    fn close(self) -> Result<(), Error>;
 }
 
 // TODO currently we just format_err into essentially error strings because all we will do is
@@ -48,13 +48,9 @@ pub trait DBBackend {
 // just passing in the field or a tuple of idx and field name. there's a column_count on the row so
 // you might not even need to pass in the idxes of field names, just the names.
 
-impl DBBackend for SqliteBackend {
-    fn metadata(&mut self) -> Result<DBMetadata, Error> {
-        // NOTE: even though we only read here, we are using a transaction so that when we switch
-        // to implementing these operations in terms of transactions, everything should "just work"
-        // simply by changing self to be a transaction wrapper. i.e. instead of "self.connection"
-        // we'll just use "self.transaction" directly.
-        let tx = self.connection.transaction()?;
+impl<'conn> DBBackend for SqliteTransaction<'conn> {
+    fn metadata(&self) -> Result<DBMetadata, Error> {
+        let tx = &self.transaction;
 
         let (version, date_created) = tx.query_row(
             "SELECT version, date_created FROM metadata WHERE id = 1",
@@ -66,7 +62,6 @@ impl DBBackend for SqliteBackend {
             }
         ).map_err(|e| format_err!("Error getting metadata from database: {}", e))?;
 
-        tx.commit()?;
         Ok(
             DBMetadata {
                 version: version,
@@ -75,15 +70,12 @@ impl DBBackend for SqliteBackend {
         )
     }
 
-    fn add_task(&mut self, task: &Task) -> Result<(), Error> {
-        let tx = self.transaction()?;
-        tx.add_task(task)?; 
-        tx.commit()?;
-        Ok(())
+    fn add_task(&self, task: &Task) -> Result<(), Error> {
+        DBTransaction::add_task(self, task) 
     }
 
-    fn fetch_all_tasks(&mut self) -> Result<Vec<Task>, Error> {
-        let tx = self.transaction()?;
+    fn fetch_all_tasks(&self) -> Result<Vec<Task>, Error> {
+        let tx = self;
         let tasks = tx.fetch_tasks()
             .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?;
         let breaks = tx.fetch_breaks()
@@ -94,11 +86,14 @@ impl DBBackend for SqliteBackend {
             .chain(breaks.into_iter().map(|t| t.1))
             .collect();
 
-        tx.commit()?;
         return Ok(all_tasks);
     }
 
-    fn choose_current_task(&mut self, p: f32, reward: bool) -> Result<(), Error> {
+    fn fetch_current_task(&self) -> Result<Option<Task>, Error> {
+        DBTransaction::fetch_current_task(self) 
+    }
+
+    fn choose_current_task(&self, p: f32, reward: bool) -> Result<(), Error> {
         if p < 0.0 {
             return Err(format_err!("p parameter was less than 0"));
         }
@@ -106,7 +101,7 @@ impl DBBackend for SqliteBackend {
             return Err(format_err!("p parameter was greater than 1"));
         }
 
-        let tx = self.transaction()?;
+        let tx = self;
         let tasks = {
             if reward {
                 tx.fetch_breaks()
@@ -127,56 +122,14 @@ impl DBBackend for SqliteBackend {
         tx.set_current_task(&selected_task_id)
             .map_err(|e| format_err!("Failed to set current task during transaction: {}", e))?;
 
-        tx.commit()?;
 
         Ok(())
     }
 
-    fn fetch_current_task(&mut self) -> Result<Option<Task>, Error> {
-        let tx = self.connection.transaction()?;
-
-        // we will be able to return the task directly without declaring outside the scope once we
-        // move this function to TxOperations
-        let current_task;
-
-        { // begin transaction scope
-        let mut stmt = tx.prepare_cached(
-            "SELECT task, priority, category
-            FROM tasks
-            WHERE id = (
-                SELECT task_id FROM current
-                WHERE id = 1
-            )
-            ")
-            .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
-
-        // TODO there should probably be a better way to do this.
-        let mut rows: Vec<SQLResult<Result<Task, Error>>> = stmt.query_map(NO_PARAMS, |row| {
-                Task::from_parts(row.get(0), row.get(1), row.get(2))
-             })
-            .map_err(|e| format_err!("Error executing current task query: {}", e))?
-            .collect();
-
-        if rows.len() == 0 {
-            return Ok(None);
-        }
-
-        if rows.len() > 1 {
-            return Err(format_err!("Multiple tasks selected in current task query. {} tasks, selected {:?}", rows.len(), rows))
-        }
-
-        // unwrap is fine, we check that there is one element directly above
-        current_task = rows.pop().unwrap()
-            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?
-            .map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
-        } // end transaction scope
-        tx.commit()?;
-        Ok(Some(current_task))
+    fn finish(self) -> Result<(), Error> {
+        self.commit()
     }
 
-    fn close(self) -> Result<(), Error> {
-        self.connection.close().map_err(|(_,e)| e.into())
-    }
 }
 
 // Could make this more generic by taking a generic iterator, and two functions as parameters that

@@ -8,9 +8,10 @@ use crate::task::test_utils::{example_task_list, arb_task_list};
 #[test]
 fn test_db_list_empty() {
     let mut db = open_test_db();
+    let tx = db.transaction().expect("Failed to begin transaction");
 
     // get nothing from db
-    let res = db.fetch_all_tasks();
+    let res = tx.fetch_all_tasks();
     assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
     let db_tasks = res.unwrap();
 
@@ -21,11 +22,12 @@ fn test_db_list_empty() {
 #[test]
 fn test_db_list_invalid_task_empty() {
     let mut db = open_test_db();
+    let tx = db.transaction().expect("Failed to begin transaction");
 
     let task = Task::example_invalid_empty_desc();
-    db.add_task(&task).expect("Adding task failed");
+    tx.add_task(&task).expect("Adding task failed");
 
-    let res = db.fetch_all_tasks();
+    let res = tx.fetch_all_tasks();
     assert!(res.is_err(), "No error when trying to deserialize invalid task: {:?}", res);
 
     let err = res.unwrap_err();
@@ -35,11 +37,12 @@ fn test_db_list_invalid_task_empty() {
 #[test]
 fn test_db_list_invalid_task_zero_priority() {
     let mut db = open_test_db();
+    let tx = db.transaction().expect("Failed to begin transaction");
 
     let task = Task::example_invalid_zero_priority();
-    db.add_task(&task).expect("Adding task failed");
+    tx.add_task(&task).expect("Adding task failed");
 
-    let res = db.fetch_all_tasks();
+    let res = tx.fetch_all_tasks();
     assert!(res.is_err(), "No error when trying to deserialize invalid task: {:?}", res);
 
     let err = res.unwrap_err();
@@ -50,17 +53,18 @@ fn test_db_list_invalid_task_zero_priority() {
 #[test]
 fn test_db_list_added_manually() {
     let mut db = open_test_db();
+    let tx = db.transaction().expect("Failed to begin transaction");
 
     let tasks = example_task_list();
 
     // add all tasks to db
     for task in &tasks {
-        let res = db.add_task(&task);
+        let res = tx.add_task(&task);
         assert!(res.is_ok(), "Adding task failed. task: {:?}, err: {}", task, res.unwrap_err());
     }
 
     // get tasks back from db
-    let res = db.fetch_all_tasks();
+    let res = tx.fetch_all_tasks();
     assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
     let db_tasks = res.unwrap();
 
@@ -78,15 +82,16 @@ proptest! {
     #[test]
     fn test_db_list_arb(tasks in arb_task_list()) {
         let mut db = open_test_db();
+        let tx = db.transaction().expect("Failed to begin transaction");
 
         // add all tasks to db
         for task in &tasks {
-            let res = db.add_task(&task);
+            let res = tx.add_task(&task);
             prop_assert!(res.is_ok(), "Adding task failed. task: {:?}, err: {}", task, res.unwrap_err());
         }
 
         // get tasks back
-        let res = db.fetch_all_tasks();
+        let res = tx.fetch_all_tasks();
         prop_assert!(res.is_ok(), "Tasks could not be retrieved: {:?}", res.unwrap_err());
         let db_tasks = res.unwrap();
 

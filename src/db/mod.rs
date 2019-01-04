@@ -18,7 +18,7 @@ pub struct SqliteTransaction<'conn> {
 }
 
 impl SqliteBackend {
-    fn transaction<'conn>(&'conn mut self) -> Result<SqliteTransaction, Error> {
+    pub fn transaction<'conn>(&'conn mut self) -> Result<SqliteTransaction, Error> {
         let tx = self.connection.transaction()
             .map_err(|e| format_err!("Could not begin sqlite transaction: {}", e))?;
 

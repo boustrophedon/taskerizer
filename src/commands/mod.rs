@@ -14,7 +14,7 @@ const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
 // subcommand trait
 
 trait Subcommand {
-    fn run(&self, db: &mut impl DBBackend) -> Result<Vec<String>, Error>;
+    fn run(&self, tx: &impl DBBackend) -> Result<Vec<String>, Error>;
 }
 
 #[derive(StructOpt, Debug)]
@@ -78,6 +78,7 @@ pub enum TKZCmd {
 impl TKZCmd {
     pub fn dispatch(&self, config: &Config) -> Result<Vec<String>, Error> {
         let mut db = config.db()?;
+        let tx = db.transaction()?;
         let break_cutoff = config.break_cutoff;
         // get other stuff from config, etc...
 
@@ -86,30 +87,34 @@ impl TKZCmd {
         let task_p = Uniform::new_inclusive(0.0, 1.0).sample(&mut rng);
         let category_p = Uniform::new_inclusive(0.0, 1.0).sample(&mut rng);
 
-        return self.run(&mut db, (task_p, category_p, break_cutoff));
+        let res = self.run(&tx, (task_p, category_p, break_cutoff));
+        if res.is_ok() {
+            tx.finish()?;
+        }
+        return res;
     }
 
-    fn run(&self, db: &mut impl DBBackend, choose_current_params: (f32, f32, f32)) -> Result<Vec<String>, Error> {
+    fn run(&self, tx: &impl DBBackend, choose_current_params: (f32, f32, f32)) -> Result<Vec<String>, Error> {
         let output = match self {
-            TKZCmd::Add(add) => add.run(db),
-            TKZCmd::List => {let l = List; l.run(db)},
-            TKZCmd::Current(current) => current.run(db),
+            TKZCmd::Add(add) => add.run(tx),
+            TKZCmd::List => {let l = List; l.run(tx)},
+            TKZCmd::Current(current) => current.run(tx),
             _ => unimplemented!(),
         };
 
-        let current_task = db.fetch_current_task()
+        let current_task = tx.fetch_current_task()
             .map_err(|err| format_err!("Error getting current task while choosing new task after executing command: {}", err))?;
         // if there is no current task, choose a new one.
         if current_task.is_none() {
             let (task_p, category_p, break_cutoff) = choose_current_params;
-            self.choose_new_current(db, task_p, category_p, break_cutoff)?;
+            self.choose_new_current(tx, task_p, category_p, break_cutoff)?;
         }
         return output;
 
     }
 
-    fn choose_new_current(&self, db: &mut impl DBBackend, task_p: f32, category_p: f32, break_cutoff: f32) -> Result<(), Error> {
-        let tasks = db.fetch_all_tasks()
+    fn choose_new_current(&self, tx: &impl DBBackend, task_p: f32, category_p: f32, break_cutoff: f32) -> Result<(), Error> {
+        let tasks = tx.fetch_all_tasks()
             .map_err(|err| format_err!("Failed to get tasks while choosing new task after executing command: {}", err))?;
         let num_breaks = tasks.iter().filter(|&t| t.is_break()).count();
         let num_tasks = tasks.len() - num_breaks;
@@ -129,7 +134,7 @@ impl TKZCmd {
         }
 
         if let Some(is_break) = choose_break {
-            db.choose_current_task(task_p, is_break)
+            tx.choose_current_task(task_p, is_break)
                 .map_err(|err| format_err!("Failed to choose new task after executing command: {}", err))?;
         }
 

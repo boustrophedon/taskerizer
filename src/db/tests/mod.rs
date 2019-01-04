@@ -67,15 +67,17 @@ fn test_db_open_err_bad_dir() {
 /// both a metadata table check and a sanity "is stuff being written to disk" check.
 fn test_db_metadata() {
     let before_creation = Utc::now();
-    let (db, dir) = open_test_db_on_disk();
+    let dir = { // open connection
+        let (_db_will_drop, dir) = open_test_db_on_disk();
 
-    // close connection and record time
-    db.close().expect("closing db connection failed");
+        dir
+    }; // close connection on drop and record time
     let after_creation = Utc::now();
 
     // open again and read metadata
     let mut db = SqliteBackend::open(&dir).expect("opening database failed");
-    let metadata = db.metadata().expect("getting db metadata failed");
+    let tx = db.transaction().expect("Failed to begin transaction");
+    let metadata = tx.metadata().expect("getting db metadata failed");
 
     let ver = env!("CARGO_PKG_VERSION");
 

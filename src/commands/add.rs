@@ -47,11 +47,11 @@ pub struct Add {
 }
 
 impl Subcommand for Add {
-    fn run(&self, db: &mut impl DBBackend) -> Result<Vec<String>, Error> {
+    fn run(&self, tx: &impl DBBackend) -> Result<Vec<String>, Error> {
         let task = Task::from_parts(self.task.clone(), self.priority, self.reward)
             .map_err(|e| format_err!("Task input was invalid: {}", e))?;
 
-        db.add_task(&task)
+        tx.add_task(&task)
             .map_err(|e| format_err!("Could not add task to database. {}", e))?;
 
         Ok(vec![
