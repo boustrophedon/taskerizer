@@ -530,3 +530,11 @@ also, in server communication we need to either serialize the transaction operat
 ---
 
 I happened to read https://robatwilliams.github.io/decent-code/ and there was a point made about using the word "get" for getters, and I agreed with it. So why am I using 'get' for a (relatively) expensive database query operation? I will change it.
+
+---
+
+Better auth idea: auth is tied to db transaction creation. db transaction struct has a user id field and uses it in all operations
+
+db transaction should be created in the "binary" - cli or server with auth handled separately, and then transaction uniformly passed into the dispatch library function.
+
+this also allows connection pooling to work independently from the transaction i think.
