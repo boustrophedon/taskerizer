@@ -1,5 +1,11 @@
 use failure::Error;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Category {
+    Break,
+    Task,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Task representation.
 pub struct Task {
