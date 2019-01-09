@@ -3,8 +3,6 @@ use crate::db::tests::open_test_db;
 
 use crate::task::test_utils::{example_task_1, example_task_break_1, example_task_list, arb_task_list_bounded};
 
-use std::collections::HashSet;
-
 #[test]
 /// Add task, commit, remove task, check no task. Rollback, check task is there.
 fn test_tx_remove_task() {
@@ -33,6 +31,28 @@ fn test_tx_remove_task() {
     assert!(tasks.len() == 1, "Incorrect number of tasks in db, expected 1, got {}", tasks.len());
 }
 
+#[test]
+fn test_tx_remove_task_duplicates() {
+    let task = example_task_1();
+    let mut db = open_test_db();
+
+    let tx = db.transaction().unwrap();
+    // we insert the same task twice
+    tx.add_task(&task).expect("Adding task failed");
+    tx.add_task(&task).expect("Adding task failed");
+    tx.commit().expect("Commiting failed");
+
+    // remove it, and then make sure that there's still one left
+    let tx = db.transaction().unwrap();
+    let tasks = tx.fetch_tasks().expect("Getting tasks failed");
+
+    let first_id = tasks[0].0;
+    let res = tx.remove_task(&first_id);
+    assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
+
+    let tasks = tx.fetch_tasks().expect("Getting tasks failed");
+    assert!(tasks.len() == 1, "Incorrect number of tasks in db, expected 1, got {}", tasks.len());
+}
 
 #[test]
 /// Make sure an error is returned if we delete the task that's set as the current task.
@@ -132,28 +152,32 @@ fn test_tx_remove_task_list() {
     tx.commit().expect("Commiting failed");
 
     // remove each task and check that the task isn't in the db
-    let mut remaining_tasks: HashSet<_> = example_tasks.iter().collect();
+    let mut remaining_tasks: Vec<_> = example_tasks.iter().collect();
     while remaining_tasks.len() > 0 {
-        // get the tasks from the db and arbitrarily pick the first one to remove
+        // pop a task from the remaining tasks, find a task (NOTE: there may be duplicates!) rowid
+        // and remove it from the db
+        let to_be_removed = remaining_tasks.pop().expect("pop failed when remaining_tasks had len>0");
+
         let tx = db.transaction().unwrap();
         let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
         let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
-        let next_db_task = db_tasks.into_iter()
+        let opt = db_tasks.into_iter()
             .chain(db_breaks.into_iter())
-            .next().unwrap();
-        let (rowid, task) = next_db_task;
+            .find(|(_, task)| task == to_be_removed);
+        assert!(opt.is_some(), "Task in remaining_tasks wasn't found in db: {:?}", to_be_removed);
+        let (rowid, _) = opt.unwrap();
 
         let res = tx.remove_task(&rowid);
         assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
-        remaining_tasks.remove(&task);
         tx.commit().unwrap();
 
         // get the remaining tasks from the db
         let tx = db.transaction().unwrap();
         let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
         let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
-        let remaining_db_tasks: Vec<_> = db_tasks.into_iter().map(|t| t.1)
-            .chain(db_breaks.into_iter().map(|t| t.1))
+        let remaining_db_tasks: Vec<_> = db_tasks.into_iter()
+            .chain(db_breaks.into_iter())
+            .map(|t| t.1)
             .collect();
 
         // check that the number of tasks from the db is the same as the ones we have in
@@ -188,20 +212,23 @@ proptest! {
         tx.commit().expect("Commiting failed");
 
         // remove each task and check that the task isn't in the db
-        let mut remaining_tasks: HashSet<_> = example_tasks.iter().collect();
+        let mut remaining_tasks: Vec<_> = example_tasks.iter().collect();
         while remaining_tasks.len() > 0 {
-            // get the tasks from the db and arbitrarily pick the first one to remove
+            // pop a task from the remaining tasks, find a task (NOTE: there may be duplicates!) rowid
+            // and remove it from the db
+            let to_be_removed = remaining_tasks.pop().expect("pop failed when remaining_tasks had len>0");
+
             let tx = db.transaction().unwrap();
             let db_tasks = tx.fetch_tasks().expect("Getting tasks failed");
             let db_breaks = tx.fetch_breaks().expect("Getting breaks failed");
-            let next_db_task = db_tasks.into_iter()
+            let opt = db_tasks.into_iter()
                 .chain(db_breaks.into_iter())
-                .next().unwrap();
-            let (rowid, task) = next_db_task;
+                .find(|(_, task)| task == to_be_removed);
+            assert!(opt.is_some(), "Task in remaining_tasks wasn't found in db: {:?}", to_be_removed);
+            let (rowid, _) = opt.unwrap();
 
             let res = tx.remove_task(&rowid);
             prop_assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
-            remaining_tasks.remove(&task);
             tx.commit().unwrap();
            
             // get the remaining tasks from the db
