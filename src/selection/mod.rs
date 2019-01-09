@@ -1,4 +1,4 @@
-use crate::task::Task;
+use crate::task::{Category, Task};
 
 mod weighted_random;
 pub use self::weighted_random::WeightedRandom;
@@ -6,6 +6,9 @@ pub use self::weighted_random::WeightedRandom;
 // pub use top::Top;
 
 pub trait SelectionStrategy {
+    /// Select a `Category` via some method determined by the implementor.
+    fn select_category(&mut self) -> Category;
+
     /// Select a T from the slice of (T, Tasks) via some method determined by the implementor. If
     /// the slice is empty, implementors are expected to panic.
     ///

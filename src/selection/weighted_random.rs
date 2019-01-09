@@ -1,4 +1,4 @@
-use crate::task::Task;
+use crate::task::{Category, Task};
 
 use rand::prelude::*;
 use rand::distributions::WeightedIndex;
@@ -10,18 +10,27 @@ use super::SelectionStrategy;
 /// priority 0 this is not a problem, but it would be disallowed if zero priority tasks were
 /// allowed regardless.
 pub struct WeightedRandom {
-    rng: ThreadRng
+    rng: ThreadRng,
+    break_probability: f32,
 }
 
 impl WeightedRandom {
-    pub fn new() -> WeightedRandom {
+    pub fn new(break_probability: f32) -> WeightedRandom {
         WeightedRandom {
             rng: thread_rng(),
+            break_probability,
         }
     }
 }
 
 impl SelectionStrategy for WeightedRandom {
+    fn select_category(&mut self) -> Category {
+        match self.rng.gen_bool(self.break_probability.into()) {
+            true => Category::Break,
+            false => Category::Task,
+        }
+    }
+
     fn select_task<T>(&mut self, tasks: &[(T, Task)]) -> usize {
         assert!(tasks.len() > 0, "Tasks slice is empty, nothing to select.");
 

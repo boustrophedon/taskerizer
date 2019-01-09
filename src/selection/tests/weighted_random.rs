@@ -1,13 +1,24 @@
+use crate::task::Category;
 use crate::task::test_utils::{example_task_1, example_task_2, example_task_3, arb_task_list};
+
 use crate::selection::{WeightedRandom, SelectionStrategy};
 
 // FIXME: compute actual 99.99% confidence intervals or whatever for the values and put
 // computations in comment here.
 
+// TBH we don't really need to test this, it's just a sanity check
+#[test]
+fn test_select_category_works() {
+    let mut selector = WeightedRandom::new(1.0);
+    assert_eq!(Category::Break, selector.select_category());
+
+    let mut selector = WeightedRandom::new(0.0);
+    assert_eq!(Category::Task, selector.select_category());
+}
 
 #[test]
 fn test_weighted_random_works() {
-    let mut selector = WeightedRandom::new();
+    let mut selector = WeightedRandom::new(0.0);
 
     let tasks = vec![(0, example_task_1())];
 
@@ -18,7 +29,7 @@ fn test_weighted_random_works() {
 
 #[test]
 fn test_weighted_random_equal_priorities() {
-    let mut selector = WeightedRandom::new();
+    let mut selector = WeightedRandom::new(0.0);
 
     // same task so they have the same priorities
     let tasks = vec![(0, example_task_1()), (1, example_task_1())];
@@ -39,7 +50,7 @@ fn test_weighted_random_equal_priorities() {
 
 #[test]
 fn test_weighted_random_equal_priorities_3() {
-    let mut selector = WeightedRandom::new();
+    let mut selector = WeightedRandom::new(0.0);
 
     // same task so they have the same priorities
     let tasks = vec![(0, example_task_1()), (1, example_task_1()), (2, example_task_1())];
@@ -63,7 +74,7 @@ fn test_weighted_random_equal_priorities_3() {
 
 #[test]
 fn test_weighted_random_nonequal_priorities() {
-    let mut selector = WeightedRandom::new();
+    let mut selector = WeightedRandom::new(0.0);
 
     // task 2: priority 12
     // task 3: priority 2
@@ -87,8 +98,8 @@ fn test_weighted_random_nonequal_priorities() {
 
 proptest! {
     #[test]
-    fn test_weighted_random_nonequal_priorities_arb(tasks in arb_task_list()) {
-        let mut selector = WeightedRandom::new();
+    fn test_weighted_random_nonequal_priorities_arb(_not_used: f32, tasks in arb_task_list()) {
+        let mut selector = WeightedRandom::new(_not_used);
 
         let num_items = tasks.len();
         let tasks: Vec<_> = tasks.into_iter().enumerate().collect();
