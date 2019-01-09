@@ -31,14 +31,14 @@ impl SelectionStrategy for WeightedRandom {
         }
     }
 
-    fn select_task<T>(&mut self, tasks: &[(T, Task)]) -> usize {
+    fn select_task(&mut self, tasks: &[&Task]) -> usize {
         assert!(tasks.len() > 0, "Tasks slice is empty, nothing to select.");
 
         // TODO we convert the u32 into f32 to get around overflow issues but there's probably a
         // better algorithm.
         //
         // specifically, we are handling cases where the sum will overflow if we use ints. 
-        let priorities = tasks.iter().map(|t| t.1.priority() as f32);
+        let priorities = tasks.iter().map(|t| t.priority() as f32);
        
         let dist = WeightedIndex::new(priorities).expect("Error creating distribution that should never occur");
 

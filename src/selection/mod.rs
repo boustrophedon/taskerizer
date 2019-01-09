@@ -9,12 +9,11 @@ pub trait SelectionStrategy {
     /// Select a `Category` via some method determined by the implementor.
     fn select_category(&mut self) -> Category;
 
-    /// Select a T from the slice of (T, Tasks) via some method determined by the implementor. If
-    /// the slice is empty, implementors are expected to panic.
-    ///
-    /// NB: T will pretty much always be a db::transaction::RowId, but it's not a public type. This
-    /// also makes it easier to test.
-    fn select_task<T>(&mut self, tasks: &[(T, Task)]) -> usize;
+    /// Select the index of a `Task` from the slice via some method determined by the implementor.
+    /// If the slice is empty, implementors are expected to panic.
+    // FIXME: is there a better way of doing the tasks parameter so it can come from a
+    // Vec<(T, Task)> but still be passed as a trait object
+    fn select_task(&mut self, tasks: &[&Task]) -> usize;
 }
 
 #[cfg(test)]

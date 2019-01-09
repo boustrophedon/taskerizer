@@ -1,4 +1,4 @@
-use crate::task::Category;
+use crate::task::{Category, Task};
 use crate::task::test_utils::{example_task_1, example_task_2, example_task_3, arb_task_list};
 
 use crate::selection::{WeightedRandom, SelectionStrategy};
@@ -20,9 +20,10 @@ fn test_select_category_works() {
 fn test_weighted_random_works() {
     let mut selector = WeightedRandom::new(0.0);
 
-    let tasks = vec![(0, example_task_1())];
+    let tasks = [example_task_1()];
+    let task_refs: Vec<&Task> = tasks.iter().collect();
 
-    let item = selector.select_task(&tasks);
+    let item = selector.select_task(&task_refs);
 
     assert_eq!(item, 0);
 }
@@ -32,11 +33,12 @@ fn test_weighted_random_equal_priorities() {
     let mut selector = WeightedRandom::new(0.0);
 
     // same task so they have the same priorities
-    let tasks = vec![(0, example_task_1()), (1, example_task_1())];
+    let tasks = vec![example_task_1(), example_task_1()];
+    let task_refs: Vec<&Task> = tasks.iter().collect();
 
     let mut counts: [usize; 2] = [0,0];
     for _ in 0..100 {
-        counts[selector.select_task(&tasks)] += 1;
+        counts[selector.select_task(&task_refs)] += 1;
     }
 
     // "20" is basically arbitrary but it's unlikely to happen so it's good enough.
@@ -53,11 +55,12 @@ fn test_weighted_random_equal_priorities_3() {
     let mut selector = WeightedRandom::new(0.0);
 
     // same task so they have the same priorities
-    let tasks = vec![(0, example_task_1()), (1, example_task_1()), (2, example_task_1())];
+    let tasks = vec![example_task_1(), example_task_1(), example_task_1()];
+    let task_refs: Vec<&Task> = tasks.iter().collect();
 
     let mut counts: [usize; 3] = [0,0,0];
     for _ in 0..100 {
-        counts[selector.select_task(&tasks)] += 1;
+        counts[selector.select_task(&task_refs)] += 1;
     }
 
     // "10" is basically arbitrary but it's unlikely to happen so it's good enough.
@@ -78,11 +81,12 @@ fn test_weighted_random_nonequal_priorities() {
 
     // task 2: priority 12
     // task 3: priority 2
-    let tasks = vec![(0, example_task_2()), (1, example_task_3())];
+    let tasks = vec![example_task_2(), example_task_3()];
+    let task_refs: Vec<&Task> = tasks.iter().collect();
 
     let mut counts: [usize; 2] = [0,0];
     for _ in 0..100 {
-        counts[selector.select_task(&tasks)] += 1;
+        counts[selector.select_task(&task_refs)] += 1;
     }
 
     // completely arbitrary heuristic: 1/4*n*p
@@ -102,15 +106,15 @@ proptest! {
         let mut selector = WeightedRandom::new(_not_used);
 
         let num_items = tasks.len();
-        let tasks: Vec<_> = tasks.into_iter().enumerate().collect();
+        let task_refs: Vec<&Task> = tasks.iter().collect();
         
         let mut counts = vec![0; num_items];
         for _ in 0..1000 {
-            counts[selector.select_task(&tasks)] += 1;
+            counts[selector.select_task(&task_refs)] += 1;
         }
 
-        let p_denom = tasks.iter().fold(0f32, |acc, (_, task)| acc + task.priority() as f32);
-        for (i, task) in tasks {
+        let p_denom = tasks.iter().fold(0f32, |acc, task| acc + task.priority() as f32);
+        for (i, task) in tasks.iter().enumerate() {
             // FIXME: again completely arbitrary
             let heuristic = (0.25 * 1000.0 * (task.priority() as f32 / p_denom).floor()) as usize;
             prop_assert!(counts[i] >= heuristic, "Task {} was not chosen enough: task {:?}, heuristic {}", i, task, heuristic);
