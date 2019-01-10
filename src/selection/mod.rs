@@ -2,8 +2,8 @@ use crate::task::{Category, Task};
 
 mod weighted_random;
 pub use self::weighted_random::WeightedRandom;
-// mod top;
-// pub use top::Top;
+mod top;
+pub use self::top::Top;
 
 pub trait SelectionStrategy {
     /// Select a `Category` via some method determined by the implementor.
