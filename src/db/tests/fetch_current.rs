@@ -1,41 +1,11 @@
-use crate::db::{DBBackend, SqliteTransaction};
+use crate::db::DBBackend;
 
 use crate::db::tests::open_test_db;
 
 use crate::task::Task;
-use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
+use crate::task::test_utils::{example_task_1, example_task_break_1, example_task_2, arb_task_list};
 
-use proptest::test_runner::TestCaseError;
-
-// utility for checking correct current task is selected
-fn assert_task_at_p(tx: &SqliteTransaction, p: f32, expected_task: &Task, msg: &str) {
-    tx.choose_current_task(p, expected_task.is_break()).expect("Failed choosing current task");
-
-    let res = tx.fetch_current_task();
-    assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
-
-    let task_opt = res.unwrap();
-    assert!(task_opt.is_some(), "No current task even though we selected one.");
-
-    let task = task_opt.unwrap();
-    assert_eq!(task, *expected_task, "{}", msg);
-}
-
-// utility for checking correct current task is selected
-fn prop_assert_task_at_p(tx: &SqliteTransaction, p: f32, expected_task: &Task, msg: &str) -> Result<(), TestCaseError> {
-    tx.choose_current_task(p, expected_task.is_break()).expect("Failed choosing current task");
-
-    let res = tx.fetch_current_task();
-    prop_assert!(res.is_ok(), "Getting current task failed: {}", res.unwrap_err());
-
-    let task_opt = res.unwrap();
-    prop_assert!(task_opt.is_some(), "No current task even though we selected one.");
-
-    let task = task_opt.unwrap();
-    prop_assert_eq!(&task, expected_task, "{}", msg);
-
-    Ok(())
-}
+use crate::selection::{Top, WeightedRandom};
 
 
 #[test]
@@ -52,63 +22,102 @@ fn test_db_fetch_current_no_tasks() {
 
 #[test]
 fn test_db_fetch_current_one_task() {
+    let mut selector = Top::new();
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
     
     tx.add_task(&example_task_1()).expect("Failed adding task to db in test");
 
-    assert_task_at_p(&tx, 0.0, &example_task_1(), "example task 1");
+    tx.select_current_task(&mut selector).expect("Failed to select current task");
 
-    // also assert that we error if we try to choose current task from breaks if there are none
+    let res = tx.fetch_current_task();
+    assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
 
-    let res = tx.choose_current_task(0.0, true);
-    assert!(res.is_err(), "DB did not return an error when choosing a new break without any breaks in tx.");
-    let err = res.unwrap_err();
-    assert!(err.to_string().contains("No tasks with given category were found"), 
-            "Not the expected error when choosing task with no tasks in category: {}", err);
+    let opt = res.unwrap();
+    assert!(opt.is_some(), "No current task after selecting one");
+
+    let task = opt.unwrap();
+    assert_eq!(task, example_task_1()); 
 }
 
 #[test]
 fn test_db_fetch_current_one_break() {
+    let mut selector = Top::new();
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
     
     tx.add_task(&example_task_break_1()).expect("Failed adding task to db in test");
 
-    assert_task_at_p(&tx, 0.0, &example_task_break_1(), "example break 1");
+    tx.select_current_task(&mut selector).expect("Failed to select current task");
 
-    // also assert that we error if we try to choose current task from tasks if there are none
+    let res = tx.fetch_current_task();
+    assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
 
-    let res = tx.choose_current_task(0.0, false);
-    assert!(res.is_err(), "DB did not return an error when choosing a new break without any breaks in tx.");
-    let err = res.unwrap_err();
-    assert!(err.to_string().contains("No tasks with given category were found"),
-            "Not the expected error when choosing task with no tasks in category: {}", err);
+    let opt = res.unwrap();
+    assert!(opt.is_some(), "No current task after selecting one");
+
+    let task = opt.unwrap();
+    assert_eq!(task, example_task_break_1()); 
 }
 
 #[test]
 fn test_db_fetch_current_task_vs_break() {
+    let mut top_selector = Top::new();
+    let mut random_break_selector = WeightedRandom::new(1.0);
+    let mut random_task_selector = WeightedRandom::new(0.0);
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
     
     tx.add_task(&example_task_1()).expect("Failed adding task to db in test");
+    tx.add_task(&example_task_2()).expect("Failed adding task to db in test");
     tx.add_task(&example_task_break_1()).expect("Failed adding task to db in test");
 
-    // select break
-    assert_task_at_p(&tx, 0.0, &example_task_break_1(), "example break 1");
-    assert_task_at_p(&tx, 0.3, &example_task_break_1(), "example break 1");
-    assert_task_at_p(&tx, 0.6, &example_task_break_1(), "example break 1");
-    assert_task_at_p(&tx, 1.0, &example_task_break_1(), "example break 1");
+    // blocks are just for separating the tests, they are not required.
 
-    // select task
-    assert_task_at_p(&tx, 0.0, &example_task_1(), "example task 1");
-    assert_task_at_p(&tx, 0.3, &example_task_1(), "example task 1");
-    assert_task_at_p(&tx, 0.6, &example_task_1(), "example task 1");
-    assert_task_at_p(&tx, 1.0, &example_task_1(), "example task 1");
+    { // test with top, choose example_task_2 because it has higher priority than 1
+        tx.select_current_task(&mut top_selector).expect("Failed to select current task");
+        let res = tx.fetch_current_task();
+        assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
+
+        let opt = res.unwrap();
+        assert!(opt.is_some(), "No current task after selecting one");
+
+        let task = opt.unwrap();
+        assert_eq!(task, example_task_2()); 
+    }
+
+    { // test with weighted, breakp = 0
+        tx.select_current_task(&mut random_task_selector).expect("Failed to select current task");
+        let res = tx.fetch_current_task();
+        assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
+
+        let opt = res.unwrap();
+        assert!(opt.is_some(), "No current task after selecting one");
+
+        let task = opt.unwrap();
+        assert!( (task == example_task_1()) || (task == example_task_2()) ); 
+    }
+
+    { // test with weighted, breakp = 1
+        tx.select_current_task(&mut random_break_selector).expect("Failed to select current task");
+        let res = tx.fetch_current_task();
+        assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
+
+        let opt = res.unwrap();
+        assert!(opt.is_some(), "No current task after selecting one");
+
+        let task = opt.unwrap();
+        assert_eq!(task, example_task_break_1()); 
+    }
 }
 
 #[test]
 fn test_db_fetch_current_ordering_two() {
+    let mut selector = Top::new();
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
 
@@ -120,16 +129,23 @@ fn test_db_fetch_current_ordering_two() {
     tx.add_task(&task1).expect("Failed adding task to db");
     tx.add_task(&task2).expect("Failed adding task to db");
 
-    // task 1 is first because priority and text is same except for extra "2" at end of task2 text
-    assert_task_at_p(&tx, 0.0, &task1, "task 1");
-    assert_task_at_p(&tx, 0.49, &task1, "task 1");
+    tx.select_current_task(&mut selector).expect("Failed to select current task");
+    let res = tx.fetch_current_task();
+    assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
 
-    assert_task_at_p(&tx, 0.51, &task2, "task 2");
-    assert_task_at_p(&tx, 1.0, &task2, "task 2");
+    let opt = res.unwrap();
+    assert!(opt.is_some(), "No current task after selecting one");
+
+    let current = opt.unwrap();
+    // FIXME: behavior is currently unspecified due to bug in sql statements - they don't have an
+    // order by clause for the text of the tasks
+    assert_eq!(current, task2); 
 }
 
 #[test]
 fn test_db_fetch_current_two_max_u32() {
+    let mut selector = Top::new();
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
 
@@ -140,56 +156,80 @@ fn test_db_fetch_current_two_max_u32() {
     tx.add_task(&task1).expect("Failed adding task to db in test");
     tx.add_task(&task2).expect("Failed adding task to db in test");
 
-    // task1 is the first because they have the same priority and "a" < "b"
-    assert_task_at_p(&tx, 0.0, &task1, "task 1 max priority");
-    assert_task_at_p(&tx, 0.49, &task1, "task 1 max priority");
+    tx.select_current_task(&mut selector).expect("Failed to select current task");
+    let res = tx.fetch_current_task();
+    assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
 
-    assert_task_at_p(&tx, 0.51, &task2, "task 2 max priority");
-    assert_task_at_p(&tx, 1.0, &task2, "task 2 max priority");
+    let opt = res.unwrap();
+    assert!(opt.is_some(), "No current task after selecting one");
+
+    let current = opt.unwrap();
+    // FIXME: behavior is currently unspecified due to bug in sql statements - they don't have an
+    // order by clause for the text of the tasks
+    assert_eq!(current, task2); 
 }
 
 
-// TODO this test could be better probably. 
+// FIXME: this test is fragile because the priority is the only thing we're ordering by, and we're
+// relying on tasks returned in FIFO order from the db when they have the same priority
 proptest! {
     #[test]
     fn test_db_fetch_current_arb(tasks in arb_task_list()) {
+        let mut selector = Top::new();
+
         let mut db = open_test_db();
         let tx = db.transaction().expect("Failed to begin transaction");
 
-        for task in &tasks {
-            tx.add_task(&task).expect("Failed adding task to db");
+        let (mut breaks, mut tasks): (Vec<_>, Vec<_>) = tasks.into_iter().partition(|t| t.is_break());
+        breaks.sort_by_key(|t| t.priority());
+        tasks.sort_by_key(|t| t.priority());
+
+        // first add breaks, then add tasks, so that we can check that tasks will always be chosen
+        // over breaks
+
+        if !breaks.is_empty() {
+            let mut max_break = &breaks[0];
+
+            for task in &breaks {
+                if task.priority() >= max_break.priority() {
+                    max_break = task;
+                }
+
+                tx.add_task(&task).expect("Failed adding task to db");
+
+                tx.select_current_task(&mut selector).expect("Failed to select current task");
+                let res = tx.fetch_current_task();
+                prop_assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
+
+                let opt = res.unwrap();
+                prop_assert!(opt.is_some(), "No current task after selecting one");
+
+                let current = opt.unwrap();
+                prop_assert_eq!(&current, max_break);
+            }
         }
 
-        let (breaks, tasks): (Vec<Task>, Vec<Task>) = tasks.into_iter().partition(|task| task.is_break());
+        if !tasks.is_empty() {
+            let mut max_task = &tasks[0];
 
-        use std::cmp::Ordering;
-        // compare first by priority and then by text
-        fn cmp_tasks(t1: &Task, t2: &Task) -> Ordering {
-            t1.priority().cmp(&t2.priority()).then(t1.task().cmp(&t2.task()))
+            for task in &tasks {
+                if task.priority() >= max_task.priority() {
+                    max_task = task;
+                }
+
+                tx.add_task(&task).expect("Failed adding task to db");
+
+                tx.select_current_task(&mut selector).expect("Failed to select current task");
+                let res = tx.fetch_current_task();
+                prop_assert!(res.is_ok(), "Error fetching the current task: {}", res.unwrap_err());
+
+                let opt = res.unwrap();
+                prop_assert!(opt.is_some(), "No current task after selecting one");
+
+                let current = opt.unwrap();
+                prop_assert_eq!(&current, max_task);
+            }
         }
 
-        let min_task = tasks.iter().cloned().into_iter().min_by(cmp_tasks);
-        let max_task = tasks.into_iter().max_by(cmp_tasks);
-        let min_break = breaks.iter().cloned().into_iter().min_by(cmp_tasks);
-        let max_break = breaks.into_iter().max_by(cmp_tasks);
-
-        // assert task at p=0.0 has min priority
-        if let Some(min_task) = min_task {
-            prop_assert_task_at_p(&tx, 0.0, &min_task, "min_task")?;
-        }
-        // assert task at p=1.0 has max priority
-        if let Some(max_task) = max_task {
-            prop_assert_task_at_p(&tx, 1.0, &max_task, "max_task")?;
-        }
-
-        // assert break at p=0.0 has min priority
-        if let Some(min_break) = min_break {
-            prop_assert_task_at_p(&tx, 0.0, &min_break, "min_break")?;
-        }
-
-        // assert break at p=1.0 has max priority
-        if let Some(max_break) = max_break {
-            prop_assert_task_at_p(&tx, 1.0, &max_break, "max_break")?;
-        }
     }
 }

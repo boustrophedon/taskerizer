@@ -2,7 +2,9 @@ use failure::Error;
 use crate::db::DBMetadata;
 use crate::db::{SqliteTransaction, DBTransaction};
 
-use crate::task::Task;
+use crate::selection::SelectionStrategy;
+
+use crate::task::{Category, Task};
 
 use rusqlite::NO_PARAMS;
 
@@ -20,15 +22,10 @@ pub trait DBBackend {
     /// database.  This function should never return None if there are tasks in the database.
     fn fetch_current_task(&self) -> Result<Option<Task>, Error>;
 
-    /// Choose a new task at random to be the current task. Note that if the existing current task is not
-    /// removed, it may be selected again. `p` is a parameter that must be between 0 and 1 which
-    /// represents a probability, used to select the task with the `select_task` function. The
-    /// `reward` parameter determines whether the task selected is selected from the break tasks or
-    /// the regular tasks.
-    ///
-    /// TODO: specify the ordering more precisely by making the secondary sort key after priority
-    /// something like date added. currently the task list is sorted by priority and then text.
-    fn choose_current_task(&self, p: f32, reward: bool) -> Result<(), Error>;
+    /// Select a new current task according to the `SelectionStrategy` passed in as `selector`. If
+    /// there are no tasks of one type, it will use the other. If there are both, the
+    /// `SelectionStrategy` will choose one. If there are no tasks in the database, do nothing.
+    fn select_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<(), Error>;
 
     /// Finish database operations, committing to the database. If this is not called, the
     /// transaction is rolled back.
@@ -93,33 +90,41 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
         DBTransaction::fetch_current_task(self) 
     }
 
-    fn choose_current_task(&self, p: f32, reward: bool) -> Result<(), Error> {
-        if p < 0.0 {
-            return Err(format_err!("p parameter was less than 0"));
-        }
-        if p > 1.0 {
-            return Err(format_err!("p parameter was greater than 1"));
-        }
-
+    fn select_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<(), Error> {
         let tx = self;
-        let tasks = {
-            if reward {
-                tx.fetch_breaks()
-                    .map_err(|e| format_err!("Failed to get break tasks during transaction: {}", e))?
-            }
-            else {
-                tx.fetch_tasks()
-                    .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?
+
+        let tasks = tx.fetch_tasks()
+            .map_err(|e| format_err!("Failed to get tasks during transaction: {}", e))?;
+
+        let breaks = tx.fetch_breaks()
+            .map_err(|e| format_err!("Failed to get break tasks during transaction: {}", e))?;
+
+        // If there are no tasks or no breaks, must select the other unless there are none
+        // If there are some of both, use the selection strategy
+        let selected_tasks = match (tasks.len(), breaks.len()) {
+            // None of either => no tasks in db, so there cannot be a current task.
+            (0, 0) => return Ok(()),
+            // no tasks, use breaks
+            (0, _) => breaks,
+            (_, 0) => tasks,
+            (_, _) => {
+                let category = selector.select_category();
+                match category {
+                    Category::Break => {
+                        breaks
+                    },
+                    Category::Task => {
+                        tasks
+                    }
+                }
             }
         };
 
-        if tasks.len() == 0 {
-            return Err(format_err!("No tasks with given category were found in the database to choose from."));
-        }
+        let tasks_refs: Vec<&Task> = selected_tasks.iter().map(|t| &t.1).collect();
 
-        let selected_task_id = select_task(p, &tasks);
+        let selected_task_idx = selector.select_task(&tasks_refs);
 
-        tx.set_current_task(&selected_task_id)
+        tx.set_current_task(&selected_tasks[selected_task_idx].0)
             .map_err(|e| format_err!("Failed to set current task during transaction: {}", e))?;
 
 

@@ -4,9 +4,8 @@ use structopt::StructOpt;
 
 use crate::db::DBBackend;
 use crate::config::Config;
-
-use rand::prelude::*;
-use rand::distributions::Uniform;
+use crate::selection::WeightedRandom;
+use crate::selection::SelectionStrategy;
 
 /// Default command when none is given: display the current selected task.
 const DEFAULT_COMMAND: TKZCmd = TKZCmd::Current(Current{top: false});
@@ -80,21 +79,17 @@ impl TKZCmd {
         let mut db = config.db()?;
         let tx = db.transaction()?;
         let break_cutoff = config.break_cutoff;
+        let mut selector = WeightedRandom::new(break_cutoff);
         // get other stuff from config, etc...
 
-        // choose random parameters for choose_current_task
-        let mut rng = thread_rng();
-        let task_p = Uniform::new_inclusive(0.0, 1.0).sample(&mut rng);
-        let category_p = Uniform::new_inclusive(0.0, 1.0).sample(&mut rng);
-
-        let res = self.run(&tx, (task_p, category_p, break_cutoff));
+        let res = self.run(&tx, &mut selector);
         if res.is_ok() {
             tx.finish()?;
         }
         return res;
     }
 
-    fn run(&self, tx: &impl DBBackend, choose_current_params: (f32, f32, f32)) -> Result<Vec<String>, Error> {
+    fn run(&self, tx: &impl DBBackend, selector: &mut dyn SelectionStrategy) -> Result<Vec<String>, Error> {
         let output = match self {
             TKZCmd::Add(add) => add.run(tx),
             TKZCmd::List => {let l = List; l.run(tx)},
@@ -106,40 +101,12 @@ impl TKZCmd {
             .map_err(|err| format_err!("Error getting current task while choosing new task after executing command: {}", err))?;
         // if there is no current task, choose a new one.
         if current_task.is_none() {
-            let (task_p, category_p, break_cutoff) = choose_current_params;
-            self.choose_new_current(tx, task_p, category_p, break_cutoff)?;
+            tx.select_current_task(selector)?;
         }
         return output;
 
     }
 
-    fn choose_new_current(&self, tx: &impl DBBackend, task_p: f32, category_p: f32, break_cutoff: f32) -> Result<(), Error> {
-        let tasks = tx.fetch_all_tasks()
-            .map_err(|err| format_err!("Failed to get tasks while choosing new task after executing command: {}", err))?;
-        let num_breaks = tasks.iter().filter(|&t| t.is_break()).count();
-        let num_tasks = tasks.len() - num_breaks;
-
-        let mut choose_break = None;
-        // if there are tasks of both kinds, use the passed probability to choose which category to
-        // use:
-        if num_breaks > 0 && num_tasks > 0 {
-            choose_break = Some(category_p < break_cutoff);
-        }
-        // otherwise, just use whichever we have
-        else if num_breaks > 0 {
-            choose_break = Some(true);
-        }
-        else if num_tasks > 0 {
-            choose_break = Some(false);
-        }
-
-        if let Some(is_break) = choose_break {
-            tx.choose_current_task(task_p, is_break)
-                .map_err(|err| format_err!("Failed to choose new task after executing command: {}", err))?;
-        }
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]

@@ -4,93 +4,62 @@ use crate::db::tests::open_test_db;
 
 use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
-use failure::Error;
-use proptest::test_runner::TestCaseError;
-
-// TODO besides the error tests, I'm not sure how useful these tests are. see ideas.txt
-
-/// When we try to choose the current task from a category with no tasks in it, make sure we get
-/// the correct error.
-fn assert_no_task_found_error(res: Result<(), Error>) {
-    assert!(res.is_err(), "Choosing current task with no existing tasks succeeded.");
-
-    let err = res.unwrap_err();
-    assert!(err.to_string().contains("No tasks with given category were found"), 
-            "Not the expected error when choosing task with no tasks available: {}", err);
-}
-
-/// When we try to choose the current task from a category with no tasks in it, make sure we get
-/// the correct error.
-fn prop_assert_no_task_found_error(res: Result<(), Error>) -> Result<(), TestCaseError> {
-    prop_assert!(res.is_err(), "Choosing current task with no existing tasks succeeded.");
-
-    let err = res.unwrap_err();
-    prop_assert!(err.to_string().contains("No tasks with given category were found"), 
-            "Not the expected error when choosing task with no tasks available: {}", err);
-    Ok(())
-}
-
+use crate::selection::WeightedRandom;
 
 #[test]
-fn test_db_choose_current_error_p() {
+fn test_db_select_current_empty() {
+    // break probability = 0.0
+    let mut selector = WeightedRandom::new(0.0);
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
 
-    // test with p less than 0
-    let res = tx.choose_current_task(-0.1, false);
-    assert!(res.is_err(), "Passed parameter less than 0 but did not error, got {:?}", res.unwrap());
-
-    let err = res.unwrap_err();
-    assert!(err.to_string().contains("p parameter was less than 0"));
-
-    // test with p greater than 1
-    let res = tx.choose_current_task(1.1, false);
-    assert!(res.is_err(), "Passed parameter greater than 1 but did not error, got {:?}", res.unwrap());
-
-    let err = res.unwrap_err();
-    assert!(err.to_string().contains("p parameter was greater than 1"));
+    let res = tx.select_current_task(&mut selector);
+    assert!(res.is_ok(), "Error selecting new task with no tasks in db: {}", res.unwrap_err());
 }
 
-#[test]
-fn test_db_choose_current_empty() {
-    let mut db = open_test_db();
-    let tx = db.transaction().expect("Failed to begin transaction");
-
-    let res = tx.choose_current_task(0.0, false);
-    assert_no_task_found_error(res);
-}
+// test with break probability 0 and 1 with both breaks and tasks in db
+// maybe do a test with p=0.5
+// maybe test with Top here as well
 
 #[test]
-fn test_db_choose_current_one_task() {
+fn test_db_select_current_one_task() {
+    // select_current_task should select the task because there is only one even though the break
+    // probability = 1
+    let mut selector = WeightedRandom::new(1.0);
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
 
     tx.add_task(&example_task_1()).expect("Adding task failed");
 
-    let res = tx.choose_current_task(0.0, false);
+    let res = tx.select_current_task(&mut selector);
     assert!(res.is_ok(), "Choosing current task with one task failed: {}", res.unwrap_err());
-
-    let res = tx.choose_current_task(0.0, true);
-    assert_no_task_found_error(res);
 }
 
 #[test]
-fn test_db_choose_current_one_break() {
+fn test_db_select_current_one_break() {
+    // select_current_task should select the break because there is only one even though break
+    // probability = 0
+    let mut selector = WeightedRandom::new(0.0);
+
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
 
     tx.add_task(&example_task_break_1()).expect("Adding task failed");
 
-    let res = tx.choose_current_task(0.0, true);
-    assert!(res.is_ok(), "Choosing current break task with one break failed: {}", res.unwrap_err());
-
-    let res = tx.choose_current_task(0.0, false);
-    assert_no_task_found_error(res);
+    let res = tx.select_current_task(&mut selector);
+    assert!(res.is_ok(), "Choosing current task with one break failed: {}", res.unwrap_err());
 }
 
 proptest! {
     #[test]
-    fn test_db_choose_current_arb(tasks in arb_task_list()) {
+    fn test_db_select_current_arb(tasks in arb_task_list()) {
+        // break probability = 0
+        let mut selector_task = WeightedRandom::new(0.0);
+        // break probability = 1
+        let mut selector_break = WeightedRandom::new(1.0);
+
         let mut db = open_test_db();
         let tx = db.transaction().expect("Failed to begin transaction");
 
@@ -107,28 +76,44 @@ proptest! {
             tx.add_task(task).expect("adding task failed");
         }
 
-        let res_first = tx.choose_current_task(0.0, true);
-        let res_last = tx.choose_current_task(1.0, true);
-        if has_break {
-            prop_assert!(res_first.is_ok(), "Choosing first current break failed: {}", res_first.unwrap_err());
-            prop_assert!(res_last.is_ok(), "Choosing last current break failed: {}", res_last.unwrap_err());
-        }
-        else {
-            prop_assert_no_task_found_error(res_first)?;
-            prop_assert_no_task_found_error(res_last)?;
-        }
+        // select current task with break probability = 0,
+        // then check that if we have a Task category task, it was chosen since we can't choose
+        // breaks. Otherwise, make sure that we chose a Break category task
+        let res = tx.select_current_task(&mut selector_task);
+        prop_assert!(res.is_ok(), "Selecting current task using task-selector failed: {}", res.unwrap_err());
 
+        let opt = tx.fetch_current_task().expect("Error getting current task after setting it");
+        prop_assert!(opt.is_some(), "No current task set even though we just selected one.");
+        let current = opt.unwrap();
 
-        let res_first = tx.choose_current_task(0.0, false);
-        let res_last = tx.choose_current_task(1.0, false);
         if has_task {
-            prop_assert!(res_first.is_ok(), "Choosing first current task failed: {}", res_first.unwrap_err());
-            prop_assert!(res_last.is_ok(), "Choosing last current task failed: {}", res_last.unwrap_err());
+            prop_assert!(!current.is_break(),
+                "Current task is not Task category even though there are Tasks in the db: {:?}", current);
         }
         else {
-            prop_assert_no_task_found_error(res_first)?;
-            prop_assert_no_task_found_error(res_last)?;
+            prop_assert!(current.is_break(),
+                "Current task is not Break category even though there are no Tasks in the db: {:?}", current);
         }
 
+
+        // same as above, with break/task flipped
+        // select current task with break probability = 1,
+        // then check that if we have a Break category task, it was chosen since we can't choose
+        // Tasks. Otherwise, make sure that we chose a Task category task
+        let res = tx.select_current_task(&mut selector_break);
+        prop_assert!(res.is_ok(), "Selecting current task using break-selector failed: {}", res.unwrap_err());
+
+        let opt = tx.fetch_current_task().expect("Error getting current task after setting it");
+        prop_assert!(opt.is_some(), "No current task set even though we just selected one.");
+        let current = opt.unwrap();
+
+        if has_break {
+            prop_assert!(current.is_break(),
+                "Current task is not Break category even though there are Breaks in the db: {:?}", current);
+        }
+        else {
+            prop_assert!(!current.is_break(),
+                "Current task is not Task category even though there are no Breaks in the db: {:?}", current);
+        }
     }
 }

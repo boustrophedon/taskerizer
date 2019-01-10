@@ -7,7 +7,7 @@ use chrono::Utc;
 use crate::db::{SqliteBackend, DBBackend};
 
 mod add;
-mod choose_current;
+mod select_current;
 mod fetch_current;
 mod list;
 
