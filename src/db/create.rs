@@ -57,7 +57,7 @@ impl SqliteBackend {
         self.create_metadata_table()?;
         self.create_tasks_table()?;
         self.create_current_table()?;
-        // self.create_completed_table()?;
+        //self.create_completed_table()?;
         Ok(())
     }
 
@@ -114,20 +114,35 @@ impl SqliteBackend {
         Ok(())
     }
 
-	fn create_current_table(&self) -> Result<(), Error> {
-		let conn = &self.connection;
+    fn create_current_table(&self) -> Result<(), Error> {
+        let conn = &self.connection;
 
-		conn.execute(
-			"CREATE TABLE current (
-					id INTEGER PRIMARY KEY check (id = 1),
-					task_id INTEGER NOT NULL,
-					FOREIGN KEY (task_id) REFERENCES tasks(id)
-			);",
-			NO_PARAMS,
-		).map_err(|e| format_err!("Could not create current task table: {}", e))?;
+        conn.execute(
+            "CREATE TABLE current (
+                id INTEGER PRIMARY KEY check (id = 1),
+                task_id INTEGER NOT NULL,
+                FOREIGN KEY (task_id) REFERENCES tasks(id)
+            );",
+            NO_PARAMS,
+        ).map_err(|e| format_err!("Could not create current task table: {}", e))?;
 
-		Ok(())
-	}
+        Ok(())
+    }
 
+    //fn create_completed_table(&self) -> Result<(), Error> {
+    //    let conn = &self.connection;
+    //    conn.execute(
+    //        "CREATE TABLE completed (
+    //            id INTEGER PRIMARY KEY,
+    //            task TEXT NOT NULL,
+    //            priority INTEGER NOT NULL,
+    //            category INTEGER NOT NULL,
+    //            date_completed TEXT NOT NULL
+    //        );",
+    //        NO_PARAMS,
+    //    ).map_err(|e| format_err!("Could not create completed task table: {}", e))?;
+
+    //    Ok(())
+    //}
 }
 

@@ -3,6 +3,8 @@ current todo:
 	- implement dboperation::skip_current_task
 	- display current task in output of list command with asterisk or something
 
+do "if no current, select new one" inside finish() instead of dispatch/run?
+
 change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
 
 fix sql statements in txops::get_tasks, get_breaks to be DESC on task, not ASC on category which is redundant. maybe order by time/date added instead.

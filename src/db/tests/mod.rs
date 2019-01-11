@@ -10,6 +10,8 @@ mod add;
 mod select_current;
 mod fetch_current;
 mod list;
+mod complete;
+// mod skip;
 
 // utility functions
 

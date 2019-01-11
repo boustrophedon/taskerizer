@@ -27,6 +27,13 @@ pub trait DBBackend {
     /// `SelectionStrategy` will choose one. If there are no tasks in the database, do nothing.
     fn select_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<(), Error>;
 
+    /// Replace the current task with a new one, leaving the previous current task in the database.
+    //fn skip_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<(), Error>;
+
+    /// Replace the current task with a new one, removing the previous current task from the
+    /// database and marking it as completed.
+    fn complete_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<Option<Task>, Error>;
+
     /// Finish database operations, committing to the database. If this is not called, the
     /// transaction is rolled back.
     fn finish(self) -> Result<(), Error>;
@@ -129,6 +136,30 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
 
 
         Ok(())
+    }
+
+    ///// Replace the current task with a new one, leaving the previous current task in the database.
+    //fn skip_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<(), Error>;
+
+    /// Replace the current task with a new one, removing the previous current task from the
+    /// database and returning it.
+    fn complete_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<Option<Task>, Error> {
+        let tx = self;
+
+        let current_opt = tx.pop_current_task()
+            .map_err(|e| format_err!("Failed to pop current task during transaction: {}", e))?;
+        let (current_task_id, current_task) = match current_opt {
+            Some((id, task)) => (id, task),
+            None => return Ok(None),
+        };
+
+        tx.remove_task(&current_task_id)
+            .map_err(|e| format_err!("Failed to remove task during transaction: {}", e))?;
+
+        tx.select_current_task(selector)
+            .map_err(|e| format_err!("Failed to select new current task during transaction: {}", e))?;
+
+        Ok(Some(current_task))
     }
 
     fn finish(self) -> Result<(), Error> {
