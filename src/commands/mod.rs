@@ -53,8 +53,7 @@ pub enum TKZCmd {
     Add(Add),
 
     #[structopt(name = "break")]
-    /// Skip the current task and choose a break instead, or, if the `-p` flag is present, change
-    /// the probability of a break being selected.
+    /// Skip the current task and choose a break instead.
     Break(Break),
 
     #[structopt(name = "list")]
@@ -70,7 +69,8 @@ pub enum TKZCmd {
     Complete,
 
     #[structopt(name = "skip")]
-    /// Skip the current task, choosing a new one at random.
+    /// Skip the current task and choose a new one. If there is only one task in, it will be chosen
+    /// again.
     Skip(Skip),
 }
 
