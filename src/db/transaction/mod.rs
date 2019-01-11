@@ -45,7 +45,7 @@ pub trait DBTransaction {
     /// The current task is set to None, so it must be set to something else via
     /// `DBTransaction::set_current_task` by the end of the transaction if there are other tasks in
     /// the database.
-    fn pop_current_task(&self) -> Result<Option<RowId>, Error>;
+    fn pop_current_task(&self) -> Result<Option<(RowId, Task)>, Error>;
 
     /// Remove the given task from the tasks table of the database. This operation will produce an
     /// error if the task is set as the current task and it is removed.
@@ -179,18 +179,25 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         return Ok(None);
     }
 
-    fn pop_current_task(&self) -> Result<Option<RowId>, Error> {
+    fn pop_current_task(&self) -> Result<Option<(RowId, Task)>, Error> {
         let tx = &self.transaction;
         let mut stmt = tx.prepare_cached(
-            "SELECT task_id FROM current
-            WHERE id = 1
-            ")
+            "SELECT id, task, priority, category
+            FROM tasks
+            WHERE id = (
+                SELECT task_id FROM current
+                WHERE id = 1
+            )")
             .map_err(|e| format_err!("Error preparing pop current task query: {}", e))?;
 
-        let rows: Vec<_> = stmt.query_map(NO_PARAMS, |row| {
-                RowId { id: row.get(0), _transaction: PhantomData }
+        let rows: Vec<Result<(RowId, Task), Error>> = stmt.query_map(NO_PARAMS, |row| {
+                Ok((RowId { id: row.get(0), _transaction: PhantomData },
+                Task::from_parts(row.get(1), row.get(2), row.get(3))
+                    .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?
+                ))
              })
             .map_err(|e| format_err!("Error executing pop current task query: {}", e))?
+            .flat_map(|r| r)
             .collect();
 
         // if there are no rows i.e. no current task, return None
@@ -201,7 +208,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             return Err(format_err!("Multiple tasks selected in pop current task query. {} tasks, selected {:?}", rows.len(), rows))
         }
 
-        let current_rowid = rows.into_iter().next()
+        let current_rowid_task = rows.into_iter().next()
             .expect("No rows even though we checked there was one")
             .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
 
@@ -217,7 +224,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             return Err(format_err!("Error unsetting task: More than one row was deleted: {}.", rows_modified));
         }
 
-        return Ok(Some(current_rowid));
+        return Ok(Some(current_rowid_task));
     }
 
     fn remove_task(&self, id: &RowId) -> Result<(), Error> {

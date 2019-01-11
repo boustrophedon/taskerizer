@@ -29,7 +29,7 @@ fn test_tx_pop_current_task_1() {
     tx.add_task(&reward).unwrap();
 
     // get the task we inserted and set it as the current task
-    let id = tx.fetch_tasks().unwrap()[0].0;
+    let (id, _) = tx.fetch_tasks().unwrap()[0];
     tx.set_current_task(&id).unwrap();
 
     // pop the current task and verify it's the one we set
@@ -39,7 +39,8 @@ fn test_tx_pop_current_task_1() {
     let id_opt = res.unwrap();
     assert!(id_opt.is_some(), "No current task was popped even though we set it.");
 
-    let db_task_id = id_opt.unwrap();
+    let (db_task_id, db_task) = id_opt.unwrap();
+    assert_eq!(db_task, task);
     assert_eq!(db_task_id, id);
 }
 
@@ -55,7 +56,7 @@ fn test_tx_pop_current_task_2() {
     tx.add_task(&reward).unwrap();
 
     // get the break we inserted and set it as the current task
-    let id = tx.fetch_breaks().unwrap()[0].0;
+    let (id, _) = tx.fetch_breaks().unwrap()[0];
     tx.set_current_task(&id).unwrap();
 
     // pop the current task and verify it's the one we set
@@ -65,8 +66,9 @@ fn test_tx_pop_current_task_2() {
     let id_opt = res.unwrap();
     assert!(id_opt.is_some(), "No current task was popped even though we set it.");
 
-    let db_task_id = id_opt.unwrap();
+    let (db_task_id, db_task) = id_opt.unwrap();
     assert_eq!(db_task_id, id);
+    assert_eq!(db_task, reward);
 }
 
 proptest! {
@@ -86,7 +88,7 @@ proptest! {
         let all_db_tasks = db_tasks.into_iter().chain(db_breaks);
 
         // set each task and break to current and check we get back the right one
-        for (id, _) in all_db_tasks {
+        for (id, task) in all_db_tasks {
             tx.set_current_task(&id).unwrap();
 
             // verify we get back the one we set
@@ -96,8 +98,9 @@ proptest! {
             let id_opt = res.unwrap();
             prop_assert!(id_opt.is_some(), "No current task was popped even though we set it.");
 
-            let db_task_id = id_opt.unwrap();
+            let (db_task_id, db_task) = id_opt.unwrap();
             prop_assert_eq!(db_task_id, id);
+            prop_assert_eq!(db_task, task);
         }
     }
 }
