@@ -30,9 +30,9 @@ pub trait DBBackend {
     /// Replace the current task with a different one, leaving the previous current task in the database.
     fn skip_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<(), Error>;
 
-    /// Replace the current task with a new one, removing the previous current task from the
-    /// database and marking it as completed.
-    fn complete_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<Option<Task>, Error>;
+    /// Remove the previous current task from the database and mark it as completed. This will
+    /// leave the database without a current task.
+    fn complete_current_task(&self) -> Result<Option<Task>, Error>;
 
     /// Finish database operations, committing to the database. If this is not called, the
     /// transaction is rolled back.
@@ -166,7 +166,7 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
 
     /// Replace the current task with a new one, removing the previous current task from the
     /// database and returning it.
-    fn complete_current_task(&self, selector: &mut dyn SelectionStrategy) -> Result<Option<Task>, Error> {
+    fn complete_current_task(&self) -> Result<Option<Task>, Error> {
         let tx = self;
 
         let current_opt = tx.pop_current_task()
@@ -178,9 +178,6 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
 
         tx.remove_task(&current_task_id)
             .map_err(|e| format_err!("Failed to remove task during transaction: {}", e))?;
-
-        tx.select_current_task(selector)
-            .map_err(|e| format_err!("Failed to select new current task during transaction: {}", e))?;
 
         Ok(Some(current_task))
     }
