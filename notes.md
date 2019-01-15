@@ -538,3 +538,23 @@ Better auth idea: auth is tied to db transaction creation. db transaction struct
 db transaction should be created in the "binary" - cli or server with auth handled separately, and then transaction uniformly passed into the dispatch library function.
 
 this also allows connection pooling to work independently from the transaction i think.
+
+---
+
+sync ideas: 
+
+use something like: `https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)`
+
+tasks get added to tasks table with UUID, removed -> nothing happens, UUID is added to removed set
+
+problems: db queries get more complicated, "select * from tasks where uuid not in completed"? left join?
+
+what about current table? i don't think we can use a crdt to manage a unique item, so maybe just use crdt to manage add/remove to list and then treat the "current task" as a local object?
+
+---
+
+I don't think the `DBBackend::complete_current_task` should choose a new task. we already have "if no current task, select a new one" in TKZCmd::run
+
+skip should still do so because it needs to temporarily remove the current task from the db
+
+the --top option should be a top-level one that applies to all operations

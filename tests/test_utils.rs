@@ -86,3 +86,9 @@ pub fn example_current_top() -> TKZArgs {
         })),
     }
 }
+
+pub fn example_complete() -> TKZArgs {
+    TKZArgs {
+        cmd: Some(TKZCmd::Complete),
+    }
+}

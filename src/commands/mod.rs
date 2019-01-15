@@ -69,8 +69,8 @@ pub enum TKZCmd {
     Complete,
 
     #[structopt(name = "skip")]
-    /// Skip the current task and choose a new one. If there is only one task in, it will be chosen
-    /// again.
+    /// Skip the current task and choose a new one. If there is only one task in the database, it
+    /// will be chosen again.
     Skip(Skip),
 }
 
@@ -94,6 +94,7 @@ impl TKZCmd {
             TKZCmd::Add(add) => add.run(tx),
             TKZCmd::List => {let l = List; l.run(tx)},
             TKZCmd::Current(current) => current.run(tx),
+            TKZCmd::Complete => { let c = Complete; c.run(tx)},
             _ => unimplemented!(),
         };
 
@@ -124,6 +125,9 @@ pub use self::list::List;
 
 mod current;
 pub use self::current::Current;
+
+mod complete;
+pub use self::complete::Complete;
 
 #[derive(StructOpt, Debug)]
 pub struct Break {
