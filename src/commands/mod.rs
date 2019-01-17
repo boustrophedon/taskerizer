@@ -71,7 +71,7 @@ pub enum TKZCmd {
     #[structopt(name = "skip")]
     /// Skip the current task and choose a new one. If there is only one task in the database, it
     /// will be chosen again.
-    Skip(Skip),
+    Skip,
 }
 
 impl TKZCmd {
@@ -94,7 +94,8 @@ impl TKZCmd {
             TKZCmd::Add(add) => add.run(tx),
             TKZCmd::List => {let l = List; l.run(tx)},
             TKZCmd::Current(current) => current.run(tx),
-            TKZCmd::Complete => { let c = Complete; c.run(tx)},
+            TKZCmd::Complete => {let c = Complete; c.run(tx)},
+            TKZCmd::Skip => {let s = Skip; s.run(tx, selector)},
             _ => unimplemented!(),
         };
 
@@ -105,9 +106,7 @@ impl TKZCmd {
             tx.select_current_task(selector)?;
         }
         return output;
-
     }
-
 }
 
 #[cfg(test)]
@@ -129,6 +128,9 @@ pub use self::current::Current;
 mod complete;
 pub use self::complete::Complete;
 
+mod skip;
+pub use self::skip::Skip;
+
 #[derive(StructOpt, Debug)]
 pub struct Break {
     /// The probability as a decimal to select a task from break. Must be less than 1.0.
@@ -147,11 +149,4 @@ fn parse_prob(arg: &str) -> Result<f32, Error> {
     }
 
     Ok(p)
-}
-
-#[derive(StructOpt, Debug)]
-pub struct Skip {
-    #[structopt(long = "any")]
-    /// Chooses a task from any category instead of the same as the current task's
-    pub any: bool,
 }

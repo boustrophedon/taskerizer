@@ -92,3 +92,9 @@ pub fn example_complete() -> TKZArgs {
         cmd: Some(TKZCmd::Complete),
     }
 }
+
+pub fn example_skip() -> TKZArgs {
+    TKZArgs {
+        cmd: Some(TKZCmd::Skip),
+    }
+}
