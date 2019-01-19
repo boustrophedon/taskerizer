@@ -1,7 +1,9 @@
 current todo:
-	- implement dboperation::complete_current_task
-	- implement dboperation::skip_current_task
-	- display current task in output of list command with asterisk or something
+	- add uuids to task struct, which should then allow us to refactor and remove RowIds entirely by indexing/primary-keying on the uuids
+	- add completed table and make add/remove operations work via unique-set crdt
+
+add top-level --config option, pass into `Config::new_in`
+add top-level --top option, pass into current, complete, skip commands
 
 do "if no current, select new one" inside finish() instead of dispatch/run?
 
