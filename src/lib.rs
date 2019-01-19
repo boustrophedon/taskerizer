@@ -1,17 +1,13 @@
 #[macro_use]
 extern crate failure;
-extern crate rusqlite;
 #[macro_use]
 extern crate structopt;
-extern crate chrono;
-
-extern crate rand;
+#[macro_use]
+extern crate serde_derive;
 
 #[cfg(test)]
 #[macro_use]
 extern crate proptest;
-#[cfg(test)]
-extern crate tempfile;
 
 pub mod commands;
 pub mod config;
