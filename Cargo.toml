@@ -19,6 +19,11 @@ directories = "1.0"
 toml = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
+uuid = { version = "0.7", features = ["v4", "u128"] }
+
+# for uuid -> sql and back conversions
+# this can be removed if rusqlite gets u128 conversion built-in
+byteorder = "1"
 
 [dev-dependencies]
 proptest = "0.8"
