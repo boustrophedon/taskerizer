@@ -1,11 +1,34 @@
 use std::marker::PhantomData;
 
 use failure::Error;
+use rusqlite::NO_PARAMS;
+use rusqlite::types::{FromSql, FromSqlResult, FromSqlError, ValueRef};
+use uuid::Uuid;
+
 use crate::db::SqliteTransaction;
 
 use crate::task::Task;
 
-use rusqlite::NO_PARAMS;
+// TODO: rusqlite has a FromSql<i128> but not u128, whereas Uuid has From<u128> but not From<i128>.
+// so add a FromSql<u128> to rusqlite.
+struct SqlBlobUuid {
+    pub uuid: Uuid,
+}
+
+impl FromSql for SqlBlobUuid {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        use byteorder::{LittleEndian, ByteOrder};
+
+        value.as_blob().and_then(|bytes| {
+            if bytes.len() == 16 {
+                let uuid = From::from(LittleEndian::read_u128(bytes));
+                Ok(SqlBlobUuid { uuid } )
+            } else {
+                Err(FromSqlError::Other(format_err!("Invalid number of bytes for UUID: {} bytes != 16.", bytes.len()).into()))
+            }
+        })
+    }
+}
 
 // FIXME: i'm kind of wary of allowing PartialEq and Eq to be derived for RowId because ideally
 // they shouldn't need to be compared, but I did it to make the tests simpler. 
@@ -63,11 +86,14 @@ pub trait DBTransaction {
 impl<'conn> DBTransaction for SqliteTransaction<'conn> {
     fn add_task(&self, task: &Task) -> Result<(), Error> {
         let tx = &self.transaction;
+        let uuid_bytes: &[u8] = task.uuid().as_bytes();
+
         tx.execute_named(
-            "INSERT INTO tasks (task, priority, category) VALUES (:task, :priority, :category)",
+            "INSERT INTO tasks (task, priority, category, uuid) VALUES (:task, :priority, :category, :uuid)",
             &[(":task", &task.task()),
               (":priority", &task.priority()),
-              (":category", &task.is_break())
+              (":category", &task.is_break()),
+              (":uuid", &uuid_bytes)
             ],
         ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
         Ok(())
@@ -78,7 +104,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
         let mut tasks = Vec::new();
         let mut stmt = tx.prepare_cached(
-            "SELECT id, task, priority, category
+            "SELECT id, task, priority, category, uuid
             FROM tasks
             WHERE category = 0
             ORDER BY
@@ -88,7 +114,8 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(NO_PARAMS, |row| {
                 let rowid = RowId { id: row.get(0), _transaction: PhantomData };
-                let task = Task::from_parts(row.get(1), row.get(2), row.get(3));
+                let sql_uuid: SqlBlobUuid = row.get(4);
+                let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_uuid.uuid);
                 (rowid, task)
              })
             .map_err(|e| format_err!("Error executing task list query: {}", e))?;
@@ -106,7 +133,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
         let mut tasks = Vec::new();
         let mut stmt = tx.prepare_cached(
-            "SELECT id, task, priority, category
+            "SELECT id, task, priority, category, uuid
             FROM tasks
             WHERE category = 1
             ORDER BY
@@ -116,7 +143,8 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(NO_PARAMS, |row| {
                 let rowid = RowId { id: row.get(0), _transaction: PhantomData };
-                let task = Task::from_parts(row.get(1), row.get(2), row.get(3));
+                let sql_uuid: SqlBlobUuid = row.get(4);
+                let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_uuid.uuid);
                 (rowid, task)
              })
             .map_err(|e| format_err!("Error executing task list query: {}", e))?;
@@ -151,7 +179,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
     fn fetch_current_task(&self) -> Result<Option<Task>, Error> {
         let tx = &self.transaction;
         let mut stmt = tx.prepare_cached(
-            "SELECT task, priority, category
+            "SELECT task, priority, category, uuid
             FROM tasks
             WHERE id = (
                 SELECT task_id FROM current
@@ -161,7 +189,8 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
         let rows: Vec<_> = stmt.query_map(NO_PARAMS, |row| {
-                Task::from_parts(row.get(0), row.get(1), row.get(2))
+                let sql_uuid: SqlBlobUuid = row.get(3);
+                Task::from_parts(row.get(0), row.get(1), row.get(2), sql_uuid.uuid)
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?
             .collect();
@@ -182,7 +211,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
     fn pop_current_task(&self) -> Result<Option<(RowId, Task)>, Error> {
         let tx = &self.transaction;
         let mut stmt = tx.prepare_cached(
-            "SELECT id, task, priority, category
+            "SELECT id, task, priority, category, uuid
             FROM tasks
             WHERE id = (
                 SELECT task_id FROM current
@@ -191,8 +220,9 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error preparing pop current task query: {}", e))?;
 
         let rows: Vec<Result<(RowId, Task), Error>> = stmt.query_map(NO_PARAMS, |row| {
+                let sql_uuid: SqlBlobUuid = row.get(4);
                 Ok((RowId { id: row.get(0), _transaction: PhantomData },
-                Task::from_parts(row.get(1), row.get(2), row.get(3))
+                Task::from_parts(row.get(1), row.get(2), row.get(3), sql_uuid.uuid)
                     .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?
                 ))
              })

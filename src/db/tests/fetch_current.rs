@@ -123,8 +123,8 @@ fn test_db_fetch_current_ordering_two() {
 
     // two tasks with equal priority but names are different, second is exactly the same but ends
     // with a "2"
-    let task1 = Task::from_parts("a".to_string(), 1, false).unwrap();
-    let task2 = Task::from_parts("a2".to_string(), 1, false).unwrap();
+    let task1 = Task::new_from_parts("a".to_string(), 1, false).unwrap();
+    let task2 = Task::new_from_parts("a2".to_string(), 1, false).unwrap();
 
     tx.add_task(&task1).expect("Failed adding task to db");
     tx.add_task(&task2).expect("Failed adding task to db");
@@ -149,8 +149,8 @@ fn test_db_fetch_current_two_max_u32() {
     let mut db = open_test_db();
     let tx = db.transaction().expect("Failed to begin transaction");
 
-    let task1 = Task::from_parts("a".to_string(), u32::max_value(), false).unwrap();
-    let task2 = Task::from_parts("b".to_string(), u32::max_value(), false).unwrap();
+    let task1 = Task::new_from_parts("a".to_string(), u32::max_value(), false).unwrap();
+    let task2 = Task::new_from_parts("b".to_string(), u32::max_value(), false).unwrap();
 
     // add to db
     tx.add_task(&task1).expect("Failed adding task to db in test");

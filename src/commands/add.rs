@@ -48,7 +48,7 @@ pub struct Add {
 
 impl Subcommand for Add {
     fn run(&self, tx: &impl DBBackend) -> Result<Vec<String>, Error> {
-        let task = Task::from_parts(self.task.clone(), self.priority, self.reward)
+        let task = Task::new_from_parts(self.task.clone(), self.priority, self.reward)
             .map_err(|e| format_err!("Task input was invalid: {}", e))?;
 
         tx.add_task(&task)
