@@ -12,16 +12,25 @@ pub fn example_task_1() -> Task {
         task: "test task please ignore".to_string(),
         priority: 1,
         reward: false,
-        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]),
+        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1]),
     }
 }
+pub fn example_task_1_dup() -> Task {
+    Task {
+        task: "test task please ignore".to_string(),
+        priority: 1,
+        reward: false,
+        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,0,1]),
+    }
+}
+
 
 pub fn example_task_2() -> Task {
     Task {
         task: "test task please ignore 2".to_string(),
         priority: 12,
         reward: false,
-        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1]),
+        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,2]),
     }
 }
 
@@ -30,7 +39,7 @@ pub fn example_task_3() -> Task {
         task: "just another task".to_string(),
         priority: 2,
         reward: false,
-        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,2]),
+        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,3]),
     }
 }
 
@@ -39,7 +48,7 @@ pub fn example_task_break_1() -> Task {
         task: "another tesk task with break set".to_string(),
         priority: 1,
         reward: true,
-        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,3]),
+        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0]),
     }
 }
 
@@ -48,7 +57,7 @@ pub fn example_task_break_2() -> Task {
         task: "break with high priority".to_string(),
         priority: 99,
         reward: true,
-        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,4]),
+        uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,2,0]),
     }
 }
 
@@ -67,7 +76,7 @@ impl Task {
             task: "".to_string(),
             priority: 1,
             reward: false,
-            uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0]),
+            uuid: Uuid::from_bytes([255,255,255,1, 0,0,0,0, 0,0,0,0, 0,0,0,0]),
         }
     }
 
@@ -76,7 +85,7 @@ impl Task {
             task: "test task".to_string(),
             priority: 0,
             reward: true,
-            uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,2,0]),
+            uuid: Uuid::from_bytes([255,255,255,2, 0,0,0,0, 0,0,0,0, 0,0,0,0]),
         }
     }
 }
