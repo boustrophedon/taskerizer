@@ -42,8 +42,11 @@ pub struct TempHome {
 
 impl TempHome {
     pub fn new() -> TempHome {
-        let _env_var_mutex = EnvVarMutex::acquire();
+        let env_var_mutex = EnvVarMutex::acquire();
+        TempHome::with_lock(env_var_mutex)
+    }
 
+    fn with_lock(_env_var_mutex: EnvVarMutex) -> TempHome {
         let original_home = env::var("HOME").expect("could not get home dir");
         let original_config_dir = env::var("XDG_CONFIG_HOME").ok();
         let original_data_dir = env::var("XDG_DATA_HOME").ok();
@@ -86,9 +89,16 @@ impl Drop for TempHome {
 #[cfg(target_os = "linux")]
 #[test]
 fn test_config_temp_home() {
+    // we have to acquire the env lock here separately or it could happen that this test starts
+    // running in the middle of another config test, and then the "original_home" is actually a
+    // temp home.
+    //
+    // similarly, the current_home at the bottom could begin when another config test's temphome is
+    // active because the lock was dropped along with this test's temphome in the inner scope.
+    let env_lock = EnvVarMutex::acquire();
     let original_home = env::var("HOME").expect("could not get home dir");
     {
-        let _temp_home = TempHome::new();
+        let _temp_home = TempHome::with_lock(env_lock);
         let current_home = env::var("HOME").expect("could not get home dir");
         assert!(original_home != current_home);
         assert!(current_home.starts_with("/tmp"),
