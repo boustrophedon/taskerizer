@@ -107,7 +107,7 @@ impl SqliteBackend {
                 task TEXT NOT NULL,
                 priority INTEGER NOT NULL,
                 category INTEGER NOT NULL,
-                uuid BLOB NOT NULL
+                uuid BLOB UNIQUE NOT NULL
             );",
             NO_PARAMS,
         ).map_err(|e| format_err!("Could not create tasks table: {}", e))?;

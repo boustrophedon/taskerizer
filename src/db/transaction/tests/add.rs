@@ -40,6 +40,24 @@ fn test_tx_add_task_commit() {
     assert!(res.is_ok(), "Committing transaction failed: {}", res.unwrap_err());
 }
 
+#[test]
+fn test_tx_add_duplicate_uuid_error() {
+    let mut db = open_test_db();
+    let tx = db.transaction().unwrap();
+
+    let task = example_task_1();
+    // we insert the same task twice
+    tx.add_task(&task).expect("Adding task failed");
+
+    // the second time it should fail
+    let res = tx.add_task(&task);
+    assert!(res.is_err(), "Adding the same task twice (with the same UUID) did not result in an error.");
+ 
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("UNIQUE constraint failed: tasks.uuid"),
+            "Incorrect error message when inserting duplicate task: got {}", err);
+}
+
 proptest! {
     #[test]
     fn test_tx_add_task_rollback_arb(tasks in arb_task_list()) {

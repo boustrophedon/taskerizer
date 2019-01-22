@@ -1,7 +1,7 @@
 use crate::db::DBTransaction;
 use crate::db::tests::open_test_db;
 
-use crate::task::test_utils::{example_task_1, example_task_break_1, example_task_list, arb_task_list_bounded};
+use crate::task::test_utils::{example_task_1, example_task_1_dup, example_task_break_1, example_task_list, arb_task_list_bounded};
 
 #[test]
 /// Add task, commit, remove task, check no task. Rollback, check task is there.
@@ -33,13 +33,15 @@ fn test_tx_remove_task() {
 
 #[test]
 fn test_tx_remove_task_duplicates() {
-    let task = example_task_1();
     let mut db = open_test_db();
-
     let tx = db.transaction().unwrap();
-    // we insert the same task twice
-    tx.add_task(&task).expect("Adding task failed");
-    tx.add_task(&task).expect("Adding task failed");
+
+    let task1 = example_task_1();
+    let task2 = example_task_1_dup();
+
+    // we insert the same task (with different uuids) twice
+    tx.add_task(&task1).expect("Adding task failed");
+    tx.add_task(&task2).expect("Adding task failed");
     tx.commit().expect("Commiting failed");
 
     // remove it, and then make sure that there's still one left
