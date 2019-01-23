@@ -57,7 +57,7 @@ impl SqliteBackend {
         self.create_metadata_table()?;
         self.create_tasks_table()?;
         self.create_current_table()?;
-        //self.create_completed_table()?;
+        self.create_completed_table()?;
         Ok(())
     }
 
@@ -130,20 +130,16 @@ impl SqliteBackend {
         Ok(())
     }
 
-    //fn create_completed_table(&self) -> Result<(), Error> {
-    //    let conn = &self.connection;
-    //    conn.execute(
-    //        "CREATE TABLE completed (
-    //            id INTEGER PRIMARY KEY,
-    //            task TEXT NOT NULL,
-    //            priority INTEGER NOT NULL,
-    //            category INTEGER NOT NULL,
-    //            date_completed TEXT NOT NULL
-    //        );",
-    //        NO_PARAMS,
-    //    ).map_err(|e| format_err!("Could not create completed task table: {}", e))?;
+    fn create_completed_table(&self) -> Result<(), Error> {
+        let conn = &self.connection;
+        conn.execute(
+            "CREATE TABLE completed (
+                uuid BLOB UNIQUE NOT NULL
+            );",
+            NO_PARAMS,
+        ).map_err(|e| format_err!("Could not create completed task table: {}", e))?;
 
-    //    Ok(())
-    //}
+        Ok(())
+    }
 }
 
