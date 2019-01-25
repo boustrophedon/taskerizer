@@ -71,12 +71,8 @@ pub trait DBTransaction {
     fn pop_current_task(&self) -> Result<Option<(RowId, Task)>, Error>;
 
     /// Remove the given task from the tasks table of the database. This operation will produce an
-    /// error if the given task is set as the current task.
+    /// error if the task is set as the current task and it is removed.
     fn remove_task(&self, id: &RowId) -> Result<(), Error>;
-
-    /// Mark the given task as complete by adding it to the `complete` table. This does not remove
-    /// it from the `tasks` table.
-    fn mark_task_complete(&self, id: &RowId) -> Result<(), Error>;
 
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
@@ -275,19 +271,6 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         else if rows_modified > 1 {
             return Err(format_err!("Error deleting task: More than one row was deleted: {}.", rows_modified));
         }
-        Ok(())
-    }
-
-    fn mark_task_complete(&self, id: &RowId) -> Result<(), Error> {
-        let tx = &self.transaction;
-
-        tx.execute_named(
-            "INSERT INTO completed (uuid)
-                SELECT uuid FROM tasks WHERE id = :id;
-            ",
-            &[(":id", &id.id),
-            ],
-        ).map_err(|e| format_err!("Error marking task completed in database: {}", e))?;
         Ok(())
     }
 
