@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/boustrophedon/taskerizer.svg?branch=master)](https://travis-ci.org/boustrophedon/taskerizer)
+[![Build Status](https://travis-ci.org/boustrophedon/taskerizer.svg?branch=master)](https://travis-ci.org/boustrophedon/taskerizer) [![Coverage Status](https://coveralls.io/repos/github/boustrophedon/taskerizer/badge.svg?branch=master)](https://coveralls.io/github/boustrophedon/taskerizer?branch=master)
 
 This is a prototype for Taskerizer, an app to help you pick what to do when faced with too many tasks.
 
