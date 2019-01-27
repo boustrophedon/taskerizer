@@ -74,6 +74,12 @@ pub trait DBTransaction {
     /// error if the task is set as the current task and it is removed.
     fn remove_task(&self, id: &RowId) -> Result<(), Error>;
 
+    /// Remove the task with given UUID from the tasks table of the database. This operation will
+    /// produce an error if the task is set as the current task and it is removed.
+    ///
+    /// If there is no task with the corresponding UUID in the database, nothing happens.
+    fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error>;
+
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
     fn commit(self) -> Result<(), Error>;
@@ -269,6 +275,21 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             return Err(format_err!("Error deleting task: No rows were deleted."));
         }
         else if rows_modified > 1 {
+            return Err(format_err!("Error deleting task: More than one row was deleted: {}.", rows_modified));
+        }
+        Ok(())
+    }
+
+    fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error> {
+        let tx = &self.transaction;
+        let uuid_bytes: &[u8] = uuid.as_bytes();
+        let rows_modified = tx.execute_named(
+            "DELETE FROM tasks
+            WHERE
+                uuid = :task_uuid",
+            &[(":task_uuid", &uuid_bytes)])
+            .map_err(|e| format_err!("Error deleting task: {}", e))?;
+        if rows_modified > 1 {
             return Err(format_err!("Error deleting task: More than one row was deleted: {}.", rows_modified));
         }
         Ok(())
