@@ -34,7 +34,7 @@ fn test_config_parse_bad_prob_greater_than_1() {
 }
 
 #[test]
-/// Make a TempHome, create a config in that directory, check config file is there.
+/// Make a TempHome, create a config in default directory, check config file is there.
 fn test_config_new_in_default() {
     let home = TempHome::new();
     let res = Config::new_in(None);
@@ -46,6 +46,33 @@ fn test_config_new_in_default() {
     // defaults
     assert!(config.db_path.ends_with(".local/share/taskerizer"));
     assert_eq!(config.break_cutoff, 0.35);
+}
+
+#[test]
+/// Make a TempHome, create a config in default directory, modify config, read it back, check the
+/// modification is there.
+fn test_config_new_in_default_existing_config() {
+    let home = TempHome::new();
+
+    { // make the original config
+    let res = Config::new_in(None);
+    let config_path = home.temp_home.path().join(".config/taskerizer/config.toml");
+    assert!(res.is_ok(), "Error creating config: {}", res.unwrap_err());
+    assert!(config_path.exists(), "Config path does not exist at expected location.");
+
+    let mut config = res.unwrap();
+    config.break_cutoff = 0.9;
+    config.write_config(&config_path).expect("Failed to write out config");
+    }
+
+    // read back the modified config
+    let res = Config::new_in(None);
+    assert!(res.is_ok(), "Error opening config: {}", res.unwrap_err());
+    let config = res.unwrap();
+
+    // default db path, different break_cutoff
+    assert!(config.db_path.ends_with(".local/share/taskerizer"));
+    assert_eq!(config.break_cutoff, 0.9);
 }
 
 #[test]
