@@ -51,6 +51,10 @@ However, since each element is unique, we can never have remove(x) first: nobody
 
 For simplicity my network topology will be just a client-server/hub-spoke setup, but in general this (and any operation-based CRDT) works as long as you know all the replication members. In this case, each client thinks the only other member is the server, but the server knows all of the clients, and must retain all operations until every operation is delivered to every client.
 
+## Tradeoffs
+
+The biggest tradeoff in using such a simple CRDT is that it doesn't support modifications. In order to modify a task, you have to remove it and then add a modified one. This is fine if you only do it once, but if you do it a lot then you end up with a lot of unnecessary network traffic upon sync. (this can be alleviated using local compaction before sending)
+
 ## Network sync api specification
 
 ### Network API
@@ -81,6 +85,7 @@ struct USetOpMsg {
 
 ## Example:
 
+```
 	client A registers
 	client A adds task with uuid=1
 	client A adds task with uuid=2
@@ -92,7 +97,7 @@ Now everything is fully replicated, client A, the server, and client B all have 
 	client B removes task with uuid=1
 Uh oh! Client A is out of date!
 	client A removes task with uuid=1
-Oh no!
+Oh no! Client A duplicated the remove!
 	client A syncs
 Now the server state contains only task 2
 	client B syncs
@@ -100,6 +105,7 @@ The server delivers the remove op to client B during this sync, but nothing happ
 	client A adds task with uuid=3
 	client A syncs
 The server delivers the remove op from B, nothing happens because A doesn't have it anymore
+```
 
 # Other features I'd maybe like to do
 
