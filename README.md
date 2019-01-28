@@ -71,7 +71,7 @@ The biggest tradeoff in using such a simple CRDT is that it doesn't support modi
 It's literally just:
 
 ```rust
-enum USetOpData {
+enum USetOp {
 	Add (Task),
 	Remove (Uuid),
 }

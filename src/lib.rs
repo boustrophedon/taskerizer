@@ -13,5 +13,6 @@ pub mod commands;
 pub mod config;
 pub mod task;
 pub mod selection;
+pub mod sync;
 
 pub(crate) mod db;
