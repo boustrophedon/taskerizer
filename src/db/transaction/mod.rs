@@ -1,3 +1,6 @@
+// want to keep RowId usage as pass-by-ref
+#![allow(clippy::trivially_copy_pass_by_ref)]
+
 use std::marker::PhantomData;
 
 use failure::Error;
@@ -194,24 +197,31 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             ")
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
-        let rows: Vec<_> = stmt.query_map(NO_PARAMS, |row| {
+        let rows: Vec<Result<Task, Error>> = stmt.query_map(NO_PARAMS, |row| {
                 let sql_uuid: SqlBlobUuid = row.get(3);
+                Ok(
                 Task::from_parts(row.get(0), row.get(1), row.get(2), sql_uuid.uuid)
+                    .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?
+                )
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?
+            .flat_map(|r| r)
             .collect();
+
+        // No rows -> no current task
+        if rows.is_empty() {
+            return Ok(None);
+        }
 
         if rows.len() > 1 {
             return Err(format_err!("Multiple tasks selected in current task query. {} tasks, selected {:?}", rows.len(), rows))
         }
 
-        for row_res in rows {
-            let task_res = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
-            return Ok(Some(task));
-        }
-        // if there are no rows, return Ok(None)
-        return Ok(None);
+        let current_task = rows.into_iter().next()
+            .expect("No rows even though we checked there was one")
+            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+
+        Ok(Some(current_task))
     }
 
     fn pop_current_task(&self) -> Result<Option<(RowId, Task)>, Error> {
@@ -236,8 +246,8 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             .flat_map(|r| r)
             .collect();
 
-        // if there are no rows i.e. no current task, return None
-        if rows.len() == 0 {
+        // no rows -> no current task, return None
+        if rows.is_empty() {
             return Ok(None);
         }
         if rows.len() > 1 {
@@ -260,7 +270,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             return Err(format_err!("Error unsetting task: More than one row was deleted: {}.", rows_modified));
         }
 
-        return Ok(Some(current_rowid_task));
+        Ok(Some(current_rowid_task))
     }
 
     fn remove_task(&self, id: &RowId) -> Result<(), Error> {
@@ -277,6 +287,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         else if rows_modified > 1 {
             return Err(format_err!("Error deleting task: More than one row was deleted: {}.", rows_modified));
         }
+
         Ok(())
     }
 
@@ -292,6 +303,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         if rows_modified > 1 {
             return Err(format_err!("Error deleting task: More than one row was deleted: {}.", rows_modified));
         }
+
         Ok(())
     }
 
@@ -300,11 +312,12 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
         tx.commit()
             .map_err(|e| format_err!("Error committing transaction: {}", e))?;
+
         Ok(())
     }
 
     fn rollback(self) -> Result<(), Error> {
-        return Ok(());
+        Ok(())
     }
 }
 

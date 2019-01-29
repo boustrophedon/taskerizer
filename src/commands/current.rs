@@ -1,7 +1,6 @@
 use failure::Error;
 
 use crate::db::DBBackend;
-use crate::task::Task;
 
 use super::Subcommand;
 
@@ -12,13 +11,6 @@ pub struct Current {
     pub top: bool,
 }
 
-fn format_category(task: &Task) -> String {
-    match task.is_break() {
-        true => "Break",
-        false => "Task",
-    }.to_string()
-}
-
 impl Subcommand for Current {
     fn run(&self, tx: &impl DBBackend) -> Result<Vec<String>, Error> {
         let res = tx.fetch_current_task()
@@ -27,7 +19,7 @@ impl Subcommand for Current {
         if let Some(current) = res {
             return Ok(vec![
                       format!("{}\n", current.task()),
-                      format!("Category: {}", format_category(&current)),
+                      format!("Category: {}", current.category_str()),
                       format!("Priority: {}", current.priority().to_string()),
             ]);
         }

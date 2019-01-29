@@ -68,8 +68,8 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
 
         Ok(
             DBMetadata {
-                version: version,
-                date_created: date_created,
+                version,
+                date_created,
             }
         )
     }
@@ -90,7 +90,7 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             .chain(breaks.into_iter().map(|t| t.1))
             .collect();
 
-        return Ok(all_tasks);
+        Ok(all_tasks)
     }
 
     fn fetch_current_task(&self) -> Result<Option<Task>, Error> {

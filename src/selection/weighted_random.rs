@@ -25,14 +25,16 @@ impl WeightedRandom {
 
 impl SelectionStrategy for WeightedRandom {
     fn select_category(&mut self) -> Category {
-        match self.rng.gen_bool(self.break_probability.into()) {
-            true => Category::Break,
-            false => Category::Task,
+        if self.rng.gen_bool(self.break_probability.into()) {
+            Category::Break
+        }
+        else {
+            Category::Task
         }
     }
 
     fn select_task(&mut self, tasks: &[&Task]) -> usize {
-        assert!(tasks.len() > 0, "Tasks slice is empty, nothing to select.");
+        assert!(!tasks.is_empty(), "Tasks slice is empty, nothing to select.");
 
         // TODO we convert the u32 into f32 to get around overflow issues but there's probably a
         // better algorithm.

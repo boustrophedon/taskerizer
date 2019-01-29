@@ -1,3 +1,7 @@
+// want to keep the lifetime annotation on SqliteTransaction so it's obvious that the lifetime
+// refers to the lifetime of the connection.
+#![allow(clippy::needless_lifetimes)]
+
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Transaction};
 use failure::Error;

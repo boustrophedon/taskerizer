@@ -9,6 +9,7 @@ use super::SelectionStrategy;
 ///
 /// Ties are resolved via whichever max-priority task comes last in the input, due to
 /// `Iterator::max_by_key`. This will usually be alphabetical order.
+#[derive(Default)]
 pub struct Top {}
 
 impl Top {
@@ -23,7 +24,7 @@ impl SelectionStrategy for Top {
     }
 
     fn select_task(&mut self, tasks: &[&Task]) -> usize {
-        assert!(tasks.len() > 0, "Tasks slice is empty, nothing to select.");
+        assert!(!tasks.is_empty(), "Tasks slice is empty, nothing to select.");
 
         tasks.iter()
             .enumerate()

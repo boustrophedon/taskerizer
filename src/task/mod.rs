@@ -35,13 +35,13 @@ impl Task {
     /// This function is for loading existing Tasks from disk or the network. If you want to create
     /// a new task (e.g. from user input, or for testing), use `Task::new_from_parts`.
     pub fn from_parts(task: String, priority: u32, reward: bool, uuid: Uuid) -> Result<Task, Error> {
-        if task.len() == 0 {
+        if task.is_empty() {
             return Err(format_err!("Empty task description when creating task."));
         }
         if priority == 0 {
             return Err(format_err!("Zero priority when creating task."));
         }
-        if task.contains("\x00") {
+        if task.contains('\x00') {
             return Err(format_err!("Null bytes in task description when creating task."));
         }
 
@@ -74,9 +74,11 @@ impl Task {
     }
 
     pub fn category_str(&self) -> &str {
-        match self.reward {
-            true => "Break",
-            false => "Task",
+        if self.reward {
+            "Break"
+        }
+        else {
+            "Task"
         }
     }
 

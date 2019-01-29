@@ -86,7 +86,8 @@ impl TKZCmd {
         if res.is_ok() {
             tx.finish()?;
         }
-        return res;
+
+        res
     }
 
     fn run(&self, tx: &impl DBBackend, selector: &mut dyn SelectionStrategy) -> Result<Vec<String>, Error> {
@@ -105,7 +106,8 @@ impl TKZCmd {
         if current_task.is_none() {
             tx.select_current_task(selector)?;
         }
-        return output;
+
+        output
     }
 }
 

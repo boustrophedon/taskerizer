@@ -117,8 +117,8 @@ impl Config {
 impl Config {
     /// Get a connection to the database at the location specified by the config file.
     pub fn db(&self) -> Result<SqliteBackend, Error> {
-        return SqliteBackend::open(&self.db_path)
-            .map_err(|e| format_err!("Could not acquire database connection. {}", e));
+        SqliteBackend::open(&self.db_path)
+            .map_err(|e| format_err!("Could not acquire database connection. {}", e))
     }
 }
 

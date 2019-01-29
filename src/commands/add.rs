@@ -18,10 +18,11 @@ use super::Subcommand;
 /// Parse a nonempty string from a command line argument
 fn is_str_nonempty(arg: &str) -> Result<String, Error> {
     let s: String = arg.parse().map_err(|e| format_err!("Unable to parse {} as valid string: {}", arg, e))?;
-    if s.len() == 0 {
+    if s.is_empty() {
         return Err(format_err!("Task description cannot be empty."));
     }
-    return Ok(s);
+
+    Ok(s)
 }
 
 /// Parse a nonzero u32 from a command line argument
@@ -30,7 +31,8 @@ fn is_u32_nonzero(arg: &str) -> Result<u32, Error> {
     if p == 0 {
         return Err(format_err!("Task priority cannot be 0 because it would never be selected."));
     }
-    return Ok(p);
+
+    Ok(p)
 }
 
 #[derive(StructOpt, Debug)]
