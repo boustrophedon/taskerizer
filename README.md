@@ -53,7 +53,11 @@ For simplicity my network topology will be just a client-server/hub-spoke setup,
 
 ## Tradeoffs
 
-The biggest tradeoff in using such a simple CRDT is that it doesn't support modifications. In order to modify a task, you have to remove it and then add a modified one. This is fine if you only do it once, but if you do it a lot then you end up with a lot of unnecessary network traffic upon sync. (this can be alleviated using local compaction before sending)
+The biggest tradeoff in using such a simple CRDT is that it doesn't support modifications. In order to modify a task, you have to remove it and then add a modified one. This is fine if you only do it once, but if you do it a lot then you end up with a lot of unnecessary network traffic upon sync. (this can be alleviated using local compaction before sending) Additionally, the current task is not preserved across the network when doing modifications.
+
+Additionally, as mentioned above, we need a reliable network transport with exactly-once, in-order delivery. If, as above, we do have an add and remove message out of causal order, then in the U-Set CRDT we end up with replicas in different states after synchronization: one has the added item and one doesn't. The exactly-once part is necessary only if the duplicates are sent out of order: e.g. add, remove, duplicate add. But in this situation the duplicate add is delivered out of causal order, so in the end duplicates are fine as long as they are received in causal order.
+
+We use http for transport so everything is fine.
 
 ## Network sync api specification
 
