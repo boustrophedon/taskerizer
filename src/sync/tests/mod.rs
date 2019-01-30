@@ -26,13 +26,22 @@ prop_compose! {
 
 
 impl USetOp {
-    /// Unwrap the task from an add operation. Panics if `self` is a remove operation.
+    /// Unwrap the `Task` from an add operation. Panics if `self` is a remove operation.
     fn unwrap_add(self) -> Task {
         match self {
             USetOp::Add(task) => task,
             USetOp::Remove(uuid) => panic!("unwrap_add called on Remove: uuid {}", uuid),
         }
     }
+
+    /// Unwrap the `Uuid` from a remove operation. Panics if `self` is an add operation.
+    fn unwrap_remove(self) -> Uuid {
+        match self {
+            USetOp::Add(task) => panic!("unwrap_remove called on Add: task {:?}", task),
+            USetOp::Remove(uuid) => uuid,
+        }
+    }
+
 
     /// Turn an add operation into a remove operation. Panics if `self` is already a remove
     /// operation.
@@ -45,4 +54,4 @@ impl USetOp {
 }
 
 mod add;
-// mod remove;
+mod remove;

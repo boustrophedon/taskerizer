@@ -51,6 +51,6 @@ impl USetOp {
     /// is returned so the user can be notified. If there is no task in the database with the given
     /// UUID, nothing happens.
     fn apply_remove_to_db(tx: &impl DBBackend, uuid: &Uuid) -> Result<Option<Task>, Error> {
-        unimplemented!()
+        tx.remove_task_by_uuid(uuid)
     }
 }
