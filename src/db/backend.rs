@@ -1,4 +1,7 @@
 use failure::Error;
+use rusqlite::NO_PARAMS;
+use uuid::Uuid;
+
 use crate::db::DBMetadata;
 use crate::db::{SqliteTransaction, DBTransaction};
 
@@ -6,7 +9,6 @@ use crate::selection::SelectionStrategy;
 
 use crate::task::{Category, Task};
 
-use rusqlite::NO_PARAMS;
 
 pub trait DBBackend {
     /// Get metadata about database
@@ -33,6 +35,12 @@ pub trait DBBackend {
     /// Remove the previous current task from the database and mark it as completed. This will
     /// leave the database without a current task.
     fn complete_current_task(&self) -> Result<Option<Task>, Error>;
+
+    /// Remove a task from the database. If the task was set as the current task, it is unset as
+    /// the current task and returned. Otherwise, the result is `Ok(None)`.
+    ///
+    /// This is used for network sync and isn't exposed in a CLI command currently.
+    fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<Option<Task>, Error>;
 
     /// Finish database operations, committing to the database. If this is not called, the
     /// transaction is rolled back.
@@ -180,6 +188,24 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Failed to remove task during transaction: {}", e))?;
 
         Ok(Some(current_task))
+    }
+
+    fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<Option<Task>, Error> {
+        let tx = self;
+
+        let current_opt = DBBackend::fetch_current_task(tx)
+            .map_err(|e| format_err!("Failed to get current task during USet remove operation: {}", e))?;
+
+        // If the task we're removing is the current task, use the complete operation
+        if let Some(current_task) = current_opt {
+            if current_task.uuid() == uuid {
+                return tx.complete_current_task()
+                    .map_err(|e| format_err!("Failed to complete current task when removing task: {}", e));
+            }
+        }
+
+        // If there is no current task, remove task normally
+        DBTransaction::remove_task_by_uuid(tx, uuid).map(|_| None)
     }
 
     fn finish(self) -> Result<(), Error> {

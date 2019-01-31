@@ -12,6 +12,7 @@ mod fetch_current;
 mod list;
 mod complete;
 mod skip;
+mod remove_by_uuid;
 
 // utility functions
 
