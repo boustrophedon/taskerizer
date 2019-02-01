@@ -4,7 +4,7 @@ use crate::db::DBBackend;
 use failure::Error;
 use uuid::Uuid;
 
-type ClientUuid = Uuid;
+pub type ClientUuid = Uuid;
 
 #[cfg(test)]
 mod tests;
@@ -16,6 +16,7 @@ pub enum USetOp {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// A message containing a U-Set operation and the recipient.
 struct USetOpMsg {
     op: USetOp,
     deliver_to: ClientUuid,

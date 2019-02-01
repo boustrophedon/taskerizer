@@ -57,6 +57,7 @@ impl SqliteBackend {
         self.create_metadata_table()?;
         self.create_tasks_table()?;
         self.create_current_table()?;
+        self.create_unsynced_ops_table()?;
         //self.create_completed_table()?;
         Ok(())
     }
@@ -126,6 +127,31 @@ impl SqliteBackend {
             );",
             NO_PARAMS,
         ).map_err(|e| format_err!("Could not create current task table: {}", e))?;
+
+        Ok(())
+    }
+
+    fn create_unsynced_ops_table(&self) -> Result<(), Error> {
+        let conn = &self.connection;
+
+        // NOTE: text, priority, and category fields may be null. if any of them are null, all
+        // three must be null and is_add_operation must be false.
+        //
+        // NOTE 2: sqlite's INTEGER PRIMARY KEY/rowid is monotonically increasing, so as long as we
+        // don't exceed max i64 number of unsynced ops, storing the unsynced ops in order will
+        // preserve the order.
+        conn.execute(
+            "CREATE TABLE unsynced_ops (
+                id INTEGER PRIMARY KEY,
+                is_add_operation INTEGER,
+                task TEXT,
+                priority INTEGER,
+                category INTEGER,
+                uuid BLOB UNIQUE NOT NULL,
+                client_id BLOB NOT NULL
+            );",
+            NO_PARAMS,
+        ).map_err(|e| format_err!("Could not create unsynced ops table: {}", e))?;
 
         Ok(())
     }
