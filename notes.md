@@ -558,3 +558,19 @@ I don't think the `DBBackend::complete_current_task` should choose a new task. w
 skip should still do so because it needs to temporarily remove the current task from the db
 
 the --top option should be a top-level one that applies to all operations
+
+---
+
+okay so i'm having some problems with the design of sync. i want the tkzr binary to be both the server and the client, and ideally you could start serving from a db you had been using as a client.
+
+for now let's forget about multiuser. we're just replicating everything to every node we connect to. i also want to say forget authentication but that's dumb. okay let's forget authentication.
+
+so i wrote about this in the readme, but basically the network topology is defined via your local replica sets: "clients" see a single node to replicate to, whereas "servers" see multiple nodes to sync to. however, "servers" don't actively make connections to the replica sets. similarly, "clients" don't ever recieve incoming connections. but this distinction is artificial because the database is uniform across clients and servers - all that changes is the replica set.
+
+i think authentication/"registration" is actually the problem, because "clients" need to have the raw auth token, but as a "server" you only want to keep hashed versions of passwords. we could fix this by just having the actual token stored in the config and the database itself has hashes, but i am kind of inclined right now to punt on auth and joining the replica set entirely, and just have one endpoint that accepts the clientid as a parameter and a list of operations in the body.
+
+i mean in general auth in a distributed system is hard. i think one thing that's tripping me up is that there are two kinds of "client ids": there's the actual replica/client ID, which is used to distribute messages, and then there's the "user" id, which is used to distinguish, well users: each userid corresponds to multiple replica ids.
+
+i think for now i should focus on just doing the actual sync over the network, and then do auth after that.
+
+the best way to do auth would probably be with gpg keys, but otherwise I guess we can just put the per-client auth key in the config, and if we ever do multiuser just store hashes in the db. in the multiuser case we don't necessarily have the property that every client can also be a server, so we'll figure that out at that time.

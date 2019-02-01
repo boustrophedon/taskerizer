@@ -113,6 +113,7 @@ The server delivers the remove op from B, nothing happens because A doesn't have
 
 # Other features I'd maybe like to do
 
+- Multiuser server
 - Compact the add/remove operations. Remove duplicate 'remove' operations i.e. (remove uuid=X, deliver to client Y), (remove uuid=X, deliver to client Y) in server's queue, remove undelivered add/remove pairs (add uuid=X, deliver to client Y), (remove uuid=X, deliver to client Y). These optimizations should preserve the CRDT.
 - Explicitly time-box all tasks and automatically skip to the next task when time is up.
 	- I suppose we would simply ask "did you complete this task? y/N" upon the next execution of any tkzr command, and then choose the next task.

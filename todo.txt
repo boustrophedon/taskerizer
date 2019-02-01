@@ -1,17 +1,15 @@
 current todo:
-	- add uuids to task struct, which should then allow us to refactor and remove RowIds entirely by indexing/primary-keying on the uuids
-	- add completed table and make add/remove operations work via unique-set crdt
+	- actually sync over network via crdt ops
 
 add top-level --config option, pass into `Config::new_in`
 add top-level --top option, pass into current, complete, skip commands
 
 do "if no current, select new one" inside finish() instead of dispatch/run?
+	- document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
 
 change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
 
 fix sql statements in txops::get_tasks, get_breaks to be DESC on task, not ASC on category which is redundant. maybe order by time/date added instead.
-
-document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
 
 make it clear that tx::RowIds are only for the tasks table, or just rename it to TaskRowId or TaskId
 
@@ -20,13 +18,11 @@ make it clear that tx::RowIds are only for the tasks table, or just rename it to
 	- otherwise, we get it from a function like `DBBackend::auth_user(user_id: usize, user_pass: String) -> Result<Option(UserAuth), Error>` which returns Ok(Some(UserAuth)) if there were no errors and the auth was valid, or Ok(None) if the auth was not valid. and error if there's a db error.
 	- make sure that a valid UserAuth cannot be created by anything other than that function!!!
 
-once we implement format_long, maybe use terminal codes to bold the task description or something
+use terminal codes/library to bold the task description or something
 
 deduplicate task validation code in Add struct and Task::from_parts
 
 deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks}
-
-remove use of prop_assert test helper functions from non-proptests
 
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
@@ -35,22 +31,12 @@ specify output ordering explicitly:
 	- this is now explicitly specified in the tests/list.rs test, but not in db::tests::lists
 		- I am worried that sqlite will sort unicode differently than rust, so maybe just check that the priorities are ordered. the ordering of tasks with the same priority doesn't really matter. (it will matter if we were to make an explicit row-ordering but that could be solved by using UUIDs for each row)
 
-test and implement config parsing:
-	- pick config dir and file
-	- Default::default impl if failure to read or file does not exist
-	- maybe add command line options at some point to select directory
-	- deserialize config
-
 improve row output in list by counting number of digits and using that to choose column width instead of using a hardcoded size
 	- literally could just write a function "if x < 10 return 1, else if x < 100 return 2, if x < 10000 return 3 [...] up to max u32"
 	- actually just do l = [(10, 1), (100, 2), (1000,3),...] find first where x < l[i][0], return l[i][1]
 also improve row output by adding a cutoff length for task and putting ... at the end
 	- problems with this: "length" is in terms of columns, and while there is a "char::width" it is unstable. could just assume char::width==1 for now and count chars
 	- there's probably a crate that does this for me
-
-refactor the "choose new current" implementation in TKZCmd::run
-	- lift out the "check how many of each task there are" logic
-	- add optimized db count operations for each category
 
 
 related: improve command line argument testing:
