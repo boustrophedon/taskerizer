@@ -8,7 +8,7 @@ use crate::sync::USetOp;
 
 use crate::db::tests::open_test_db;
 use crate::task::test_utils::{example_task_1, example_task_2};
-use super::uset_add_list_arb;
+use crate::sync::test_utils::uset_add_list_arb;
 
 
 // there isn't really much difference between these two tests because USetOp::Add is literally a

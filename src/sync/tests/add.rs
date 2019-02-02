@@ -6,7 +6,7 @@ use crate::sync::USetOp;
 
 use crate::db::tests::open_test_db;
 use crate::task::test_utils::{example_task_1, example_task_break_1, example_task_2};
-use super::uset_add_list_arb;
+use crate::sync::test_utils::uset_add_list_arb;
 
 #[test]
 /// Add via uset, check task is in list

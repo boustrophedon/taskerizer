@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::db::SqliteTransaction;
 
 use crate::task::Task;
+use crate::sync::{USetOp, USetOpMsg};
 
 // TODO: rusqlite has a FromSql<i128> but not u128, whereas Uuid has From<u128> but not From<i128>.
 // so add a FromSql<u128> to rusqlite.
@@ -82,6 +83,12 @@ pub trait DBTransaction {
     ///
     /// If there is no task with the corresponding UUID in the database, nothing happens.
     fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error>;
+
+    /// Store an unsynced USetOpMsg in the database to transmit later.
+    fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error>;
+
+    /// Fetch all unsynced USetOpMsgs directed to a given client.
+    // fn fetch_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<Vec<USetOpMsg>, Error>;
 
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
@@ -313,6 +320,10 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         tx.commit()
             .map_err(|e| format_err!("Error committing transaction: {}", e))?;
 
+        Ok(())
+    }
+
+    fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error> {
         Ok(())
     }
 

@@ -8,6 +8,8 @@ pub type ClientUuid = Uuid;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) mod test_utils;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum USetOp {
@@ -17,9 +19,9 @@ pub enum USetOp {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A message containing a U-Set operation and the recipient.
-struct USetOpMsg {
-    op: USetOp,
-    deliver_to: ClientUuid,
+pub struct USetOpMsg {
+    pub op: USetOp,
+    pub deliver_to: ClientUuid,
 }
 
 impl USetOp {
