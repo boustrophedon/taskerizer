@@ -1,4 +1,9 @@
 current todo:
+	- DBTx::clear_uset_op_msgs
+	- wrapper for DBBackend for uset op
+	- add clients/replicas/whatever table to db
+	- code somewhere in sync module to actually handle incoming list of USetOpMsg
+	- Testing harness for setting up servers/clients, doing operations, and syncing.
 	- actually sync over network via crdt ops
 
 add top-level --config option, pass into `Config::new_in`
