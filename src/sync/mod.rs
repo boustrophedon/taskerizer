@@ -11,13 +11,13 @@ mod tests;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum USetOp {
     Add (Task),
     Remove (Uuid),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// A message containing a U-Set operation and the recipient.
 pub struct USetOpMsg {
     pub op: USetOp,

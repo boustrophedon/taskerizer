@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::task::Task;
 use crate::sync::{USetOp, ClientUuid};
 
-use crate::task::test_utils::{example_task_1, arb_task, arb_task_list};
+use crate::task::test_utils::{example_task_1, example_task_2, arb_task, arb_task_list};
 
 pub fn example_client_1() -> ClientUuid {
     Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,4])
@@ -15,17 +15,23 @@ pub fn example_client_2() -> ClientUuid {
 pub fn example_client_3() -> ClientUuid {
     Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,6])
 }
-pub fn example_client_4() -> ClientUuid {
-    Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,7])
-}
 
 pub fn example_add_uset_op_1() -> USetOp {
     USetOp::Add(example_task_1())
 }
 
+pub fn example_add_uset_op_2() -> USetOp {
+    USetOp::Add(example_task_2())
+}
+
 pub fn example_remove_uset_op_1() -> USetOp {
     USetOp::Remove(example_task_1().uuid().clone())
 }
+
+pub fn example_remove_uset_op_2() -> USetOp {
+    USetOp::Remove(example_task_2().uuid().clone())
+}
+
 
 prop_compose! {
     [pub] fn uset_add_arb()(task in arb_task()) -> USetOp {

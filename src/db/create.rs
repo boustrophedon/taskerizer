@@ -140,6 +140,22 @@ impl SqliteBackend {
         // NOTE 2: sqlite's INTEGER PRIMARY KEY/rowid is monotonically increasing, so as long as we
         // don't exceed max i64 number of unsynced ops, storing the unsynced ops in order will
         // preserve the order.
+        //
+        // NOTE 3: unlike tasks table, task_uuid can't be UNIQUE because we support multiple
+        // remove operations queued: e.g. we distribute a task to 3 clients, then two of them send
+        // removes to the server. When the third syncs there will be two removes queued (and that's
+        // okay because of how the U-Set CRDT works).
+        //
+        // FIXME: Add messages technically should be unique on (task_uuid, client_uuid) - but this
+        // will basically never happen because adds are produced only by one client. (it could
+        // happen due to a bug, like clients retransmitting recevied messages, which is why this is
+        // a FIXME)
+        //
+        // Technically, we could store the sender as well as the recipient and check UNIQUE on the
+        // pair, but it's not really worth it.
+        //
+        // In the future, we may want to manually deduplicate the messages, and in that case we
+        // could add a UNIQUE constraint on the tuple (is_add_operation, task_uuid, client_uuid).
         conn.execute(
             "CREATE TABLE unsynced_ops (
                 id INTEGER PRIMARY KEY,
@@ -147,8 +163,8 @@ impl SqliteBackend {
                 task TEXT,
                 priority INTEGER,
                 category INTEGER,
-                uuid BLOB UNIQUE NOT NULL,
-                client_id BLOB NOT NULL
+                task_uuid BLOB NOT NULL,
+                client_uuid BLOB NOT NULL
             );",
             NO_PARAMS,
         ).map_err(|e| format_err!("Could not create unsynced ops table: {}", e))?;
