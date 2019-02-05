@@ -84,11 +84,14 @@ pub trait DBTransaction {
     /// If there is no task with the corresponding UUID in the database, nothing happens.
     fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error>;
 
-    /// Store an unsynced USetOpMsg in the database to transmit later.
+    /// Store an unsynced `USetOpMsg` in the database to transmit later.
     fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error>;
 
-    /// Fetch all unsynced USetOpMsgs directed to a given client.
+    /// Fetch all unsynced `USetOpMsg`s directed to a given client.
     fn fetch_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<Vec<USetOpMsg>, Error>;
+
+    /// Clear all unsynced `USetOpMsg`s directed to a given client.
+    fn clear_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<(), Error>;
 
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
@@ -400,6 +403,17 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         }
 
         Ok(msgs)
+    }
+
+    fn clear_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<(), Error> {
+        let tx = &self.transaction;
+        let client_uuid_bytes: &[u8] = client_id.as_bytes();
+        tx.execute_named("DELETE FROM unsynced_ops
+                         WHERE
+                           client_uuid = :client_uuid",
+                           &[(":client_uuid", &client_uuid_bytes)])
+            .map_err(|e| format_err!("Error clearing unsyced ops: {}", e))?;
+        Ok(())
     }
 
     fn commit(self) -> Result<(), Error> {
