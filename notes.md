@@ -574,3 +574,31 @@ i mean in general auth in a distributed system is hard. i think one thing that's
 i think for now i should focus on just doing the actual sync over the network, and then do auth after that.
 
 the best way to do auth would probably be with gpg keys, but otherwise I guess we can just put the per-client auth key in the config, and if we ever do multiuser just store hashes in the db. in the multiuser case we don't necessarily have the property that every client can also be a server, so we'll figure that out at that time.
+
+---
+
+sql example for normalized messages/clients
+
+```
+sqlite> CREATE TABLE clients (
+   ...> id INTEGER PRIMARY KEY,
+   ...> client_id INTEGER NOT NULL
+   ...> );
+sqlite> CREATE TABLE messages (
+   ...> text TEXT NOT NULL,
+   ...> client INTEGER NOT NULL,
+   ...> FOREIGN KEY(client) REFERENCES clients(id)
+   ...> );
+sqlite> insert into clients (client_id) values (1);
+sqlite> select * from clients;
+1|1
+sqlite> insert into clients (client_id) values (3333);
+sqlite> select * from clients;
+1|1
+2|3333
+sqlite> insert into messages (text, client) values ("hello", (select id from clients where client_id = 3333));
+sqlite> select * from messages;
+hello|2
+sqlite> select messages.text, clients.client_id from messages inner join clients on clients.id = messages.client;
+hello|3333
+```
