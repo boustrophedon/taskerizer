@@ -57,6 +57,7 @@ impl SqliteBackend {
         self.create_metadata_table()?;
         self.create_tasks_table()?;
         self.create_current_table()?;
+        self.create_replicas_table()?;
         self.create_unsynced_ops_table()?;
         //self.create_completed_table()?;
         Ok(())
@@ -127,6 +128,23 @@ impl SqliteBackend {
             );",
             NO_PARAMS,
         ).map_err(|e| format_err!("Could not create current task table: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Create the replicas table in the database. `api_url` is optional and if it exists
+    /// indicates that the replica is a server, and its HTTP API is being served at that URL.
+    fn create_replicas_table(&self) -> Result<(), Error> {
+        let conn = &self.connection;
+
+        conn.execute(
+            "CREATE TABLE replicas (
+                id INTEGER PRIMARY KEY,
+                api_url TEXT,
+                replica_uuid BLOB UNIQUE NOT NULL
+            );",
+            NO_PARAMS,
+        ).map_err(|e| format_err!("Could not create replica id table: {}", e))?;
 
         Ok(())
     }

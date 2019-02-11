@@ -1,7 +1,8 @@
 current todo:
-	- DBTx::clear_uset_op_msgs
+	- add replica uuid/url, fetch replica uuid/url
+	- change 'client_uuid' to 'replica_uuid' in unsynced ops table
 	- wrapper for DBBackend for uset op
-	- add clients/replicas/whatever table to db
+	- wrapper for DBBackend for replica table
 	- code somewhere in sync module to actually handle incoming list of USetOpMsg
 	- Testing harness for setting up servers/clients, doing operations, and syncing.
 	- actually sync over network via crdt ops
