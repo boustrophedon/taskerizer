@@ -34,19 +34,19 @@ pub fn example_remove_uset_op_2() -> USetOp {
 
 
 prop_compose! {
-    [pub] fn uset_add_arb()(task in arb_task()) -> USetOp {
+    pub fn uset_add_arb()(task in arb_task()) -> USetOp {
         USetOp::Add(task)
     }
 }
 
 prop_compose! {
-    [pub] fn uset_remove_arb()(uuid in any::<u128>()) -> USetOp {
+    pub fn uset_remove_arb()(uuid in any::<u128>()) -> USetOp {
         USetOp::Remove(Uuid::from_u128(uuid))
     }
 }
 
 prop_compose! {
-    [pub] fn uset_add_list_arb()(tasks in arb_task_list()) -> Vec<USetOp> {
+    pub fn uset_add_list_arb()(tasks in arb_task_list()) -> Vec<USetOp> {
         tasks.into_iter().map(USetOp::Add).collect()
     }
 }

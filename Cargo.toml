@@ -27,5 +27,5 @@ uuid = { version = "0.7", features = ["v4", "u128", "serde"] }
 byteorder = "1"
 
 [dev-dependencies]
-proptest = "0.8"
+proptest = { version = "0.9", default-features = false, features = ["default-code-coverage"] }
 tempfile = "3"

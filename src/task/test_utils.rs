@@ -98,7 +98,7 @@ impl Task {
 // the uuids will be different when it tries to shrink.
 
 prop_compose! {
-    [pub] fn arb_task()(task in "[^\x00]+",
+    pub fn arb_task()(task in "[^\x00]+",
                   priority in 1u32..,
                   reward in any::<bool>()) -> Task {
         Task::new_from_parts(task, priority, reward).expect("invalid parts")
@@ -106,7 +106,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    [pub] fn arb_task_bounded()(task in "[^\x00]{1,50}",
+    pub fn arb_task_bounded()(task in "[^\x00]{1,50}",
                   priority in 1..100u32,
                   reward in any::<bool>()) -> Task {
         Task::new_from_parts(task, priority, reward).expect("invalid parts")
@@ -114,7 +114,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    [pub] fn arb_task_list()(tasks in prop::collection::vec(arb_task(), 1..100))
+    pub fn arb_task_list()(tasks in prop::collection::vec(arb_task(), 1..100))
         -> Vec<Task> {
             tasks
     }
@@ -122,7 +122,7 @@ prop_compose! {
 
 
 prop_compose! {
-    [pub] fn arb_task_list_bounded()(tasks in prop::collection::vec(arb_task_bounded(), 1..100))
+    pub fn arb_task_list_bounded()(tasks in prop::collection::vec(arb_task_bounded(), 1..100))
         -> Vec<Task> {
             tasks
     }
