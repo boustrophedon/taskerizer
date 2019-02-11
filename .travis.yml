@@ -23,11 +23,12 @@ jobs:
     - stage: "Coverage"
       name: "cargo-kcov"
       script:
+        - cargo clean
+        - echo $CARGO_HOME
         - cargo kcov --version || cargo install cargo-kcov
         - |
-            [[ -x $HOME/.cargo/bin/kcov ]] && echo "kcov bin found in cache" || cargo kcov --print-install-kcov-sh | sh
-        # FIXME: When rust-lang/rust#52478 is fixed, we can get rid of the
-        # extra build step and allow cargo kcov to build it, using the "-C
-        # link-dead-code" flag, to get more accurate coverage numbers.
-        - cargo test --verbose --no-run
-        - cargo kcov --verbose --no-clean-rebuild --coveralls
+            [[ -x $HOME/.cargo/bin/kcov ]] && kcov --version | grep -q 'kcov 36' && echo "kcov bin found in cache" || cargo kcov --print-install-kcov-sh | sh
+        # sqlite3-sys outputs a bindgen file that kcov picks up when we link dead code for whatever reason
+        - cargo kcov --verbose --coveralls -- --exclude-pattern="bindgen.rs,$HOME/.cargo"
+        # clean again to get rid of artifacts with different link flags
+        - cargo clean
