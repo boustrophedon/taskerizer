@@ -58,6 +58,7 @@ impl SqliteBackend {
         self.create_tasks_table()?;
         self.create_current_table()?;
         self.create_replicas_table()?;
+        self.create_servers_table()?;
         self.create_unsynced_ops_table()?;
         //self.create_completed_table()?;
         Ok(())
@@ -132,19 +133,35 @@ impl SqliteBackend {
         Ok(())
     }
 
-    /// Create the replicas table in the database. `api_url` is optional and if it exists
-    /// indicates that the replica is a server, and its HTTP API is being served at that URL.
+    /// Create the `servers` table in the database. `api_url` is the url of the HTTP API being
+    /// served at that URL.
+    fn create_servers_table(&self) -> Result<(), Error> {
+        let conn = &self.connection;
+
+        conn.execute(
+            "CREATE TABLE servers (
+                id INTEGER PRIMARY KEY,
+                api_url TEXT UNIQUE NOT NULL,
+                replica_id INTEGER UNIQUE NOT NULL,
+                FOREIGN KEY (replica_id) REFERENCES replicas(id)
+            );",
+            NO_PARAMS,
+        ).map_err(|e| format_err!("Could not create servers table: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Create the `replicas` table in the database.
     fn create_replicas_table(&self) -> Result<(), Error> {
         let conn = &self.connection;
 
         conn.execute(
             "CREATE TABLE replicas (
                 id INTEGER PRIMARY KEY,
-                api_url TEXT,
                 replica_uuid BLOB UNIQUE NOT NULL
             );",
             NO_PARAMS,
-        ).map_err(|e| format_err!("Could not create replica id table: {}", e))?;
+        ).map_err(|e| format_err!("Could not create replicas table: {}", e))?;
 
         Ok(())
     }

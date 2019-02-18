@@ -602,3 +602,11 @@ hello|2
 sqlite> select messages.text, clients.client_id from messages inner join clients on clients.id = messages.client;
 hello|3333
 ```
+
+---
+
+so we're changing "clients" to "replicas" and then we're adding a "servers" table, which will have a url and a foreign key to a replica id. when we register, on the client side we get the replica id from the server and then store that in the replica table and the url in the servers table, and on the server side we store just the replica id.
+
+then on the client when we do a sync, we gather all the server urls and replica ids, and group the unsynced op messages by replica id (technically, we have an n+1 problem here since to do this i'm just going to get all the servers' replica ids, and then get the messages for each id, but the number of servers is small so it doesn't matter), and send those. (and then upon success, remove the ones that succeeded) then process the recieved messages from the response.
+
+on the server, when we recieve a sync, we process the messages and then we gather all the unsynced op messages for that client id and add them to the response.
