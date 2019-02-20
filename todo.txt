@@ -1,5 +1,6 @@
 current todo:
 	- add replica uuid/url, fetch replica uuid/url
+	- change 'ClientUuid' type to 'ReplicaUuid' type
 	- change 'client_uuid' to 'replica_uuid' in unsynced ops table
 	- wrapper for DBBackend for uset op
 	- wrapper for DBBackend for replica table

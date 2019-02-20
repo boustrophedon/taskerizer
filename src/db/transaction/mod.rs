@@ -93,6 +93,11 @@ pub trait DBTransaction {
     /// Clear all unsynced `USetOpMsg`s directed to a given client.
     fn clear_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<(), Error>;
 
+    /// Add a server to the replica set. This does not do any network communication, it just stores
+    /// the data.
+    // TODO maybe use an actual url type for the url parameter?
+    fn add_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error>;
+
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
     fn commit(self) -> Result<(), Error>;
@@ -413,6 +418,23 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
                            client_uuid = :client_uuid",
                            &[(":client_uuid", &client_uuid_bytes)])
             .map_err(|e| format_err!("Error clearing unsyced ops: {}", e))?;
+        Ok(())
+    }
+
+    fn add_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error> {
+        let tx = &self.transaction;
+
+        let uuid_bytes: &[u8] = replica_id.as_bytes();
+        tx.execute_named(
+            "INSERT INTO replicas (replica_uuid) VALUES (:replica_uuid)",
+            &[(":replica_uuid", &uuid_bytes),
+            ],
+        ).map_err(|e| format_err!("Error inserting server id into databasease: {}", e))?;
+        tx.execute_named(
+            "INSERT INTO servers (api_url, replica_id) VALUES (:api_url, last_insert_rowid())",
+            &[(":api_url", &api_url),
+            ],
+        ).map_err(|e| format_err!("Error inserting server url into databasease: {}", e))?;
         Ok(())
     }
 
