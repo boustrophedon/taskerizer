@@ -8,7 +8,7 @@ mod remove_by_uuid;
 mod store_uset_op;
 mod fetch_uset_op;
 mod clear_uset_op;
-mod add_replica_server;
+mod store_replica_server;
 
 use proptest::prelude::*;
 use uuid::Uuid;

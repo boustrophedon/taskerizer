@@ -96,7 +96,7 @@ pub trait DBTransaction {
     /// Add a server to the replica set. This does not do any network communication, it just stores
     /// the data.
     // TODO maybe use an actual url type for the url parameter?
-    fn add_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error>;
+    fn store_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error>;
 
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
@@ -421,7 +421,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn add_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error> {
+    fn store_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error> {
         let tx = &self.transaction;
 
         let uuid_bytes: &[u8] = replica_id.as_bytes();
