@@ -4,9 +4,12 @@ before_script:
 - apt-get update -yqq
 - apt-get install -yqq --no-install-recommends build-essential
 
-# Use cargo to test the project
-test:cargo:
+stages:
+  - test
+
+"cargo test":
+  stage: test
   script:
-  - rustc --version && cargo --version      # Print version info for debugging
+  - rustc --version && cargo --version
   - cargo test --all --verbose
 
