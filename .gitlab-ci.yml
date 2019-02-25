@@ -1,16 +1,10 @@
 image: "rust:latest"
-
-before_script:
-- apt-get update -yqq
-- apt-get install -yqq --no-install-recommends build-essential
-
 variables:
     CARGO_HOME: "$CI_PROJECT_DIR/.cargo/"
     TARGET_DIR: "$CI_PROJECT_DIR/target/"
-
-
 stages:
   - test
+  - coverage
 
 "cargo test":
   stage: test
@@ -19,7 +13,34 @@ stages:
     paths:
       - "$CARGO_HOME"
       - "$TARGET_DIR"
-  script:
-  - rustc --version && cargo --version
-  - cargo test --all --verbose
 
+  script:
+    - rustc --version && cargo --version
+    - cargo test --all --verbose
+
+"coverage":
+  stage: coverage
+  cache:
+    # coverage cache is different because compiler flags are different
+    # so the cache would get overwritten every time if we used the same one
+    key: coverage
+    paths:
+      - "$CARGO_HOME"
+      - "$TARGET_DIR"
+  variables:
+    KCOV_VERSION: "kcov 36"
+
+  before_script:
+    - apt-get update -yqq
+    # kcov build dependencies
+    - apt-get install -yqq --no-install-recommends build-essential binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev libelf-dev cmake gcc pkg-config jq
+
+  script:
+    - cargo kcov --version || cargo install cargo-kcov
+    # test whether the kcov binary exists, and check that if it does exist it's the version we've pinned
+    # otherwise, build it via the script in cargo-kcov
+    - >
+        [[ -x $HOME/.cargo/bin/kcov ]] && kcov --version | grep -q "$KCOV_VERSION" && echo "kcov bin found in cache"
+        || cargo kcov --print-install-kcov-sh | sh
+    # sqlite3-sys outputs a bindgen file that kcov picks up, so we exclude it
+    - cargo kcov --verbose -- --exclude-pattern="bindgen.rs,$HOME/.cargo"
