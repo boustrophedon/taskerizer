@@ -40,7 +40,7 @@ stages:
     # test whether the kcov binary exists, and check that if it does exist it's the version we've pinned
     # otherwise, build it via the script in cargo-kcov
     - >
-        [[ -x $HOME/.cargo/bin/kcov ]] && kcov --version | grep -q "$KCOV_VERSION" && echo "kcov bin found in cache"
+        [[ -x $CARGO_HOME/bin/kcov ]] && kcov --version | grep -q "$KCOV_VERSION" && echo "kcov bin found in cache"
         || cargo kcov --print-install-kcov-sh | sh
     # sqlite3-sys outputs a bindgen file that kcov picks up, so we exclude it
     - cargo kcov --verbose -- --exclude-pattern="bindgen.rs,$HOME/.cargo"
