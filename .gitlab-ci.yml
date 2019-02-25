@@ -5,7 +5,7 @@ before_script:
 - apt-get install -yqq --no-install-recommends build-essential
 
 variables:
-    CARGO_HOME: "$HOME/.cargo/"
+    CARGO_HOME: "$CI_PROJECT_DIR/.cargo/"
     TARGET_DIR: "$CI_PROJECT_DIR/target/"
 
 
