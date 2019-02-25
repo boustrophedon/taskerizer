@@ -4,11 +4,23 @@ before_script:
 - apt-get update -yqq
 - apt-get install -yqq --no-install-recommends build-essential
 
+variables:
+    CARGO_HOME: "$HOME/.cargo/"
+    TARGET_DIR: "$CI_PROJECT_DIR/target/"
+
+cache:
+  key: cargo-and-target
+  paths:
+    - "$CARGO_HOME"
+    - "$TARGET_DIR"
+
 stages:
   - test
 
 "cargo test":
   stage: test
+  cache:
+    key: cargo-and-target
   script:
   - rustc --version && cargo --version
   - cargo test --all --verbose
