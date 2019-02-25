@@ -8,11 +8,6 @@ variables:
     CARGO_HOME: "$HOME/.cargo/"
     TARGET_DIR: "$CI_PROJECT_DIR/target/"
 
-cache:
-  key: cargo-and-target
-  paths:
-    - "$CARGO_HOME"
-    - "$TARGET_DIR"
 
 stages:
   - test
@@ -20,7 +15,10 @@ stages:
 "cargo test":
   stage: test
   cache:
-    key: cargo-and-target
+    key: cargo-test
+    paths:
+      - "$CARGO_HOME"
+      - "$TARGET_DIR"
   script:
   - rustc --version && cargo --version
   - cargo test --all --verbose
