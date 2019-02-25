@@ -14,6 +14,13 @@ add top-level --top option, pass into current, complete, skip commands
 do "if no current, select new one" inside finish() instead of dispatch/run?
 	- document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
 
+maybe make ReplicaServer struct so I can return Vec<ReplicaServer> instead of Vec<(String, Uuid)> from DBTx::fetch_replica_servers
+
+implement ToSql for SqlBlobUuid or send a pull request for [u8;16] (and other N i guess) to rusqlite
+	- i think i'd have to make a different SqlBlobUuidRef and implement ToSql on that
+
+actually, implement To/FromSql for Task struct to simplify code in multiple places
+
 change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
 
 fix sql statements in txops::get_tasks, get_breaks to be DESC on task, not ASC on category which is redundant. maybe order by time/date added instead.
@@ -29,7 +36,7 @@ use terminal codes/library to bold the task description or something
 
 deduplicate task validation code in Add struct and Task::from_parts
 
-deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks}
+deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks} (see above, implement to/fromsql for Task)
 
 specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause

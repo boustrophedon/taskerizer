@@ -9,6 +9,7 @@ mod store_uset_op;
 mod fetch_uset_op;
 mod clear_uset_op;
 mod store_replica_server;
+mod fetch_replica_server;
 
 use proptest::prelude::*;
 use uuid::Uuid;

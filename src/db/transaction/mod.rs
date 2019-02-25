@@ -98,6 +98,10 @@ pub trait DBTransaction {
     // TODO maybe use an actual url type for the url parameter?
     fn store_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error>;
 
+    /// Fetch all known replica servers from db
+    // TODO maybe use an actual url type for the urls, use ReplicaServer type instead of tuple
+    fn fetch_replica_servers(&self) -> Result<Vec<(String, Uuid)>, Error>;
+
     /// Commit the transaction. If this method is not called, implementors of this trait should
     /// default to rolling back the transaction upon drop.
     fn commit(self) -> Result<(), Error>;
@@ -436,6 +440,32 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             ],
         ).map_err(|e| format_err!("Error inserting server url into databasease: {}", e))?;
         Ok(())
+    }
+
+    fn fetch_replica_servers(&self) -> Result<Vec<(String, Uuid)>, Error> {
+        let tx = &self.transaction;
+
+        let mut stmt = tx.prepare_cached(
+            "SELECT servers.api_url, replicas.replica_uuid
+            FROM servers
+            INNER JOIN replicas
+            ON servers.replica_id = replicas.id
+            ")
+            .map_err(|e| format_err!("Error preparing fetch replica servers query: {}", e))?;
+
+        let rows = stmt.query_map(NO_PARAMS, |row| {
+            let sql_uuid: SqlBlobUuid = row.get(1);
+            (row.get(0), sql_uuid.uuid)
+        })
+        .map_err(|e| format_err!("Error fetching replica servers from database: {}", e))?;
+
+        let mut servers: Vec<(String, Uuid)> = Vec::new();
+        for server_res in rows {
+            let server_data = server_res.map_err(|e| format_err!("Error deserializing row from database: {}", e))?;
+            servers.push(server_data);
+        }
+
+        Ok(servers)
     }
 
     fn commit(self) -> Result<(), Error> {
