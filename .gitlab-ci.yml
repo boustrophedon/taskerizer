@@ -34,6 +34,8 @@ stages:
     - apt-get update -yqq
     # kcov build dependencies
     - apt-get install -yqq --no-install-recommends build-essential binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev libelf-dev cmake gcc pkg-config jq
+    # Add cargo bin dir to path so we can check kcov version
+    - export PATH="$CARGO_HOME/bin:$PATH"
 
   script:
     - cargo kcov --version || cargo install cargo-kcov
@@ -43,4 +45,5 @@ stages:
         [[ -x $CARGO_HOME/bin/kcov ]] && kcov --version | grep -q "$KCOV_VERSION" && echo "kcov bin found in cache"
         || cargo kcov --print-install-kcov-sh | sh
     # sqlite3-sys outputs a bindgen file that kcov picks up, so we exclude it
-    - cargo kcov --verbose -- --exclude-pattern="bindgen.rs,$HOME/.cargo"
+    - cargo kcov --verbose -- --exclude-pattern="bindgen.rs,$CARGO_HOME"
+    - bash <(curl -s https://codecov.io/bash) && echo "Uploaded code coverage to codecov.io"
