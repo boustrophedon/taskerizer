@@ -333,21 +333,21 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
     fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error> {
         let tx = &self.transaction;
-        let client_uuid_bytes: &[u8] = uset_op_msg.deliver_to.as_bytes();
+        let replica_uuid_bytes: &[u8] = uset_op_msg.deliver_to.as_bytes();
 
         match &uset_op_msg.op {
             USetOp::Add(task) => {
                 let uuid_bytes: &[u8] = task.uuid().as_bytes();
                 tx.execute_named(
                     "INSERT INTO unsynced_ops
-                    (is_add_operation, task, priority, category, task_uuid, client_uuid)
-                    VALUES (:is_add_operation, :task, :priority, :category, :task_uuid, :client_uuid)",
+                    (is_add_operation, task, priority, category, task_uuid, replica_uuid)
+                    VALUES (:is_add_operation, :task, :priority, :category, :task_uuid, :replica_uuid)",
                     &[(":is_add_operation", &true),
                       (":task", &task.task()),
                       (":priority", &task.priority()),
                       (":category", &task.is_break()),
                       (":task_uuid", &uuid_bytes),
-                      (":client_uuid", &client_uuid_bytes)
+                      (":replica_uuid", &replica_uuid_bytes)
                     ],
                 ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
             },
@@ -355,11 +355,11 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
                 let uuid_bytes: &[u8] = task_uuid.as_bytes();
                 tx.execute_named(
                     "INSERT INTO unsynced_ops
-                    (is_add_operation, task_uuid, client_uuid)
-                    VALUES (:is_add_operation, :task_uuid, :client_uuid)",
+                    (is_add_operation, task_uuid, replica_uuid)
+                    VALUES (:is_add_operation, :task_uuid, :replica_uuid)",
                     &[(":is_add_operation", &false),
                       (":task_uuid", &uuid_bytes),
-                      (":client_uuid", &client_uuid_bytes)
+                      (":replica_uuid", &replica_uuid_bytes)
                     ],
                 ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
             }
@@ -370,25 +370,25 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
     fn fetch_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<Vec<USetOpMsg>, Error> {
         let tx = &self.transaction;
-        let client_uuid_bytes: &[u8] = replica_id.as_bytes();
+        let replica_uuid_bytes: &[u8] = replica_id.as_bytes();
 
         let mut stmt = tx.prepare_cached(
-            "SELECT is_add_operation, task, priority, category, task_uuid, client_uuid
+            "SELECT is_add_operation, task, priority, category, task_uuid, replica_uuid
             FROM unsynced_ops
-            WHERE client_uuid = :client_uuid
+            WHERE replica_uuid = :replica_uuid
             ORDER BY id
             ")
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
-        let rows = stmt.query_map(&[&client_uuid_bytes,], |row| {
+        let rows = stmt.query_map(&[&replica_uuid_bytes,], |row| {
                 let is_add = row.get(0);
                 if is_add {
                     let sql_task_uuid: SqlBlobUuid = row.get(4);
-                    let sql_client_uuid: SqlBlobUuid = row.get(5);
+                    let sql_replica_uuid: SqlBlobUuid = row.get(5);
                     let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_task_uuid.uuid)
                         .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?;
                     let op = USetOp::Add(task);
-                    let deliver_to = sql_client_uuid.uuid;
+                    let deliver_to = sql_replica_uuid.uuid;
 
                     // type annotation to help compiler infer err type of result here,
                     // instead of writing out the full type of `rows`
@@ -397,9 +397,9 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
                 }
                 else {
                     let sql_task_uuid: SqlBlobUuid = row.get(4);
-                    let sql_client_uuid: SqlBlobUuid = row.get(5);
+                    let sql_replica_uuid: SqlBlobUuid = row.get(5);
                     let op = USetOp::Remove(sql_task_uuid.uuid);
-                    let deliver_to = sql_client_uuid.uuid;
+                    let deliver_to = sql_replica_uuid.uuid;
 
                     Ok(USetOpMsg {op, deliver_to})
                 }
@@ -421,11 +421,11 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
     fn clear_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<(), Error> {
         let tx = &self.transaction;
-        let client_uuid_bytes: &[u8] = replica_id.as_bytes();
+        let replica_uuid_bytes: &[u8] = replica_id.as_bytes();
         tx.execute_named("DELETE FROM unsynced_ops
                          WHERE
-                           client_uuid = :client_uuid",
-                           &[(":client_uuid", &client_uuid_bytes)])
+                           replica_uuid = :replica_uuid",
+                           &[(":replica_uuid", &replica_uuid_bytes)])
             .map_err(|e| format_err!("Error clearing unsyced ops: {}", e))?;
         Ok(())
     }

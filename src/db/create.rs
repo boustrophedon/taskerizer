@@ -199,7 +199,7 @@ impl SqliteBackend {
                 priority INTEGER,
                 category INTEGER,
                 task_uuid BLOB NOT NULL,
-                client_uuid BLOB NOT NULL
+                replica_uuid BLOB NOT NULL
             );",
             NO_PARAMS,
         ).map_err(|e| format_err!("Could not create unsynced ops table: {}", e))?;
