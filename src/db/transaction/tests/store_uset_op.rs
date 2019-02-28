@@ -1,16 +1,14 @@
-use uuid::Uuid;
-
 use crate::db::DBTransaction;
 use crate::db::tests::open_test_db;
 
-use crate::sync::USetOpMsg;
+use crate::sync::{USetOpMsg, ReplicaUuid};
 use crate::sync::test_utils::{example_add_uset_op_1, example_remove_uset_op_1, example_remove_uset_op_2, uset_add_list_arb};
-use crate::sync::test_utils::{example_client_1, example_client_2};
+use crate::sync::test_utils::{example_replica_1, example_replica_2};
 
 #[test]
 fn test_tx_store_uset_op_add() {
     let op = example_add_uset_op_1();
-    let deliver_to = example_client_1();
+    let deliver_to = example_replica_1();
     let msg = USetOpMsg { op, deliver_to };
 
     let mut db = open_test_db();
@@ -23,7 +21,7 @@ fn test_tx_store_uset_op_add() {
 #[test]
 fn test_tx_store_uset_op_remove() {
     let op = example_remove_uset_op_1();
-    let deliver_to = example_client_1();
+    let deliver_to = example_replica_1();
     let msg = USetOpMsg { op, deliver_to };
 
     let mut db = open_test_db();
@@ -37,11 +35,11 @@ fn test_tx_store_uset_op_remove() {
 /// Storing duplicate duplicate remove messages is allowed.
 fn test_tx_store_uset_op_duplicates_ok() {
     let op = example_remove_uset_op_1();
-    let deliver_to = example_client_1();
+    let deliver_to = example_replica_1();
     let msg1 = USetOpMsg { op, deliver_to };
 
     let op = example_remove_uset_op_2();
-    let deliver_to = example_client_2();
+    let deliver_to = example_replica_2();
     let msg2 = USetOpMsg { op, deliver_to };
 
     let mut db = open_test_db();
@@ -65,7 +63,7 @@ proptest! {
         let tx = db.transaction().unwrap();
 
         for op in adds {
-            let deliver_to = Uuid::new_v4();
+            let deliver_to = ReplicaUuid::new_v4();
             let msg = USetOpMsg { op, deliver_to };
 
             let res = tx.store_uset_op_msg(&msg);
@@ -74,7 +72,7 @@ proptest! {
 
         for op in removes {
             let op = op.into_remove();
-            let deliver_to = Uuid::new_v4();
+            let deliver_to = ReplicaUuid::new_v4();
             let msg = USetOpMsg { op, deliver_to };
 
             let res = tx.store_uset_op_msg(&msg);

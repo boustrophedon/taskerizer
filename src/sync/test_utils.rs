@@ -2,17 +2,17 @@ use proptest::prelude::*;
 use uuid::Uuid;
 
 use crate::task::Task;
-use crate::sync::{USetOp, ClientUuid};
+use crate::sync::{USetOp, ReplicaUuid};
 
 use crate::task::test_utils::{example_task_1, example_task_2, arb_task, arb_task_list};
 
-pub fn example_client_1() -> ClientUuid {
+pub fn example_replica_1() -> ReplicaUuid {
     Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,4])
 }
-pub fn example_client_2() -> ClientUuid {
+pub fn example_replica_2() -> ReplicaUuid {
     Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,5])
 }
-pub fn example_client_3() -> ClientUuid {
+pub fn example_replica_3() -> ReplicaUuid {
     Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,6])
 }
 

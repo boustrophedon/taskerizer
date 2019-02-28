@@ -82,7 +82,7 @@ enum USetOp {
 
 struct USetOpMsg {
 	op: USetOp,
-	deliver_to: ClientUuid,
+	deliver_to: ReplicaUuid,
 }
 ```
 

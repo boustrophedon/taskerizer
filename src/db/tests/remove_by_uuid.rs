@@ -1,12 +1,11 @@
 use std::collections::HashSet;
 
-use uuid::Uuid;
-
 use crate::db::DBBackend;
 use crate::selection::{Top, WeightedRandom};
 
 use crate::db::tests::open_test_db;
 use crate::task::test_utils::{example_task_1, example_task_2, arb_task_list};
+use crate::sync::ReplicaUuid;
 
 #[test]
 /// Add task, set current, remove via uuuid, check we get current task back.
@@ -66,7 +65,7 @@ proptest! {
         }
 
         // get uuids from tasks
-        let mut uuids: HashSet<Uuid> = tasks.iter().map(|t| t.uuid().clone()).collect();
+        let mut uuids: HashSet<ReplicaUuid> = tasks.iter().map(|t| t.uuid().clone()).collect();
 
         for task in &tasks {
             let remove_uuid = task.uuid();
@@ -112,7 +111,7 @@ proptest! {
         }
 
         // get uuids from tasks
-        let mut uuids: HashSet<Uuid> = tasks.iter().map(|t| t.uuid().clone()).collect();
+        let mut uuids: HashSet<ReplicaUuid> = tasks.iter().map(|t| t.uuid().clone()).collect();
 
         // select current task, do remove operation. if we removed current task, check we actually
         // did.

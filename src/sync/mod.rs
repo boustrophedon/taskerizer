@@ -4,7 +4,7 @@ use crate::db::DBBackend;
 use failure::Error;
 use uuid::Uuid;
 
-pub type ClientUuid = Uuid;
+pub type ReplicaUuid = Uuid;
 
 #[cfg(test)]
 mod tests;
@@ -14,14 +14,14 @@ pub(crate) mod test_utils;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum USetOp {
     Add (Task),
-    Remove (Uuid),
+    Remove (ReplicaUuid),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// A message containing a U-Set operation and the recipient.
 pub struct USetOpMsg {
     pub op: USetOp,
-    pub deliver_to: ClientUuid,
+    pub deliver_to: ReplicaUuid,
 }
 
 impl USetOp {
@@ -53,7 +53,7 @@ impl USetOp {
     /// Apply a U-Set remove operation to the database. If the task to be removed was the current task, it
     /// is returned so the user can be notified. If there is no task in the database with the given
     /// UUID, nothing happens.
-    fn apply_remove_to_db(tx: &impl DBBackend, uuid: &Uuid) -> Result<Option<Task>, Error> {
+    fn apply_remove_to_db(tx: &impl DBBackend, uuid: &ReplicaUuid) -> Result<Option<Task>, Error> {
         tx.remove_task_by_uuid(uuid)
     }
 }

@@ -1,7 +1,7 @@
 use crate::db::DBTransaction;
 use crate::db::tests::open_test_db;
 
-use crate::sync::test_utils::{example_client_1, example_client_2};
+use crate::sync::test_utils::{example_replica_1, example_replica_2};
 use super::arb_server_data;
 
 // the v1/v2 things don't mean anything: they're just examples.
@@ -28,7 +28,7 @@ fn test_tx_fetch_replica_server() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     tx.store_replica_server(EXAMPLE_API_URL, &replica_id).expect("failed to store server");
 
     let res = tx.fetch_replica_servers();
@@ -46,10 +46,10 @@ fn test_tx_fetch_replica_server_2() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     tx.store_replica_server(EXAMPLE_API_URL, &replica_id).expect("failed to store server");
 
-    let replica_id2 = example_client_2();
+    let replica_id2 = example_replica_2();
     tx.store_replica_server(EXAMPLE_API_URL2, &replica_id2).expect("failed to store server");
 
     let res = tx.fetch_replica_servers();
@@ -70,9 +70,9 @@ fn test_tx_fetch_replica_server_duplicate_url() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     tx.store_replica_server(EXAMPLE_API_URL, &replica_id).expect("failed to store server");
-    let replica_id2 = example_client_2();
+    let replica_id2 = example_replica_2();
     tx.store_replica_server(EXAMPLE_API_URL, &replica_id2).expect_err("successfully stored duplicate server api url");
 
     tx.commit().expect("committing transaction failed");
@@ -95,7 +95,7 @@ fn test_tx_fetch_replica_server_duplicate_replica_id() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     tx.store_replica_server(EXAMPLE_API_URL, &replica_id).expect("failed to store server");
     tx.store_replica_server(EXAMPLE_API_URL2, &replica_id).expect_err("successfully stored duplicate replica id");
 

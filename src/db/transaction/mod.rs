@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::db::SqliteTransaction;
 
 use crate::task::Task;
-use crate::sync::{USetOp, USetOpMsg, ClientUuid};
+use crate::sync::{USetOp, USetOpMsg, ReplicaUuid};
 
 // TODO: rusqlite has a FromSql<i128> but not u128, whereas Uuid has From<u128> but not From<i128>.
 // so add a FromSql<u128> to rusqlite.
@@ -87,21 +87,21 @@ pub trait DBTransaction {
     /// Store an unsynced `USetOpMsg` in the database to transmit later.
     fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error>;
 
-    /// Fetch all unsynced `USetOpMsg`s directed to a given client.
-    fn fetch_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<Vec<USetOpMsg>, Error>;
+    /// Fetch all unsynced `USetOpMsg`s directed to a given replica.
+    fn fetch_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<Vec<USetOpMsg>, Error>;
 
-    /// Clear all unsynced `USetOpMsg`s directed to a given client.
-    fn clear_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<(), Error>;
+    /// Clear all unsynced `USetOpMsg`s directed to a given replica.
+    fn clear_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<(), Error>;
 
     /// Add a member to the replica set. This does not do any network communication, it just stores
     /// the data. Adding a replica by itself without adding a url to the `servers` table usually
     /// implies this replica is just a client.
-    fn store_replica(&self, replica_id: &ClientUuid) -> Result<(), Error>;
+    fn store_replica(&self, replica_id: &ReplicaUuid) -> Result<(), Error>;
 
     /// Add a server to the replica set. This does not do any network communication, it just stores
     /// the data.
     // TODO maybe use an actual url type for the url parameter?
-    fn store_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error>;
+    fn store_replica_server(&self, api_url: &str, replica_id: &ReplicaUuid) -> Result<(), Error>;
 
     /// Fetch all known replica servers from db
     // TODO maybe use an actual url type for the urls, use ReplicaServer type instead of tuple
@@ -368,9 +368,9 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn fetch_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<Vec<USetOpMsg>, Error> {
+    fn fetch_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<Vec<USetOpMsg>, Error> {
         let tx = &self.transaction;
-        let client_uuid_bytes: &[u8] = client_id.as_bytes();
+        let client_uuid_bytes: &[u8] = replica_id.as_bytes();
 
         let mut stmt = tx.prepare_cached(
             "SELECT is_add_operation, task, priority, category, task_uuid, client_uuid
@@ -419,9 +419,9 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(msgs)
     }
 
-    fn clear_uset_op_msgs(&self, client_id: &ClientUuid) -> Result<(), Error> {
+    fn clear_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<(), Error> {
         let tx = &self.transaction;
-        let client_uuid_bytes: &[u8] = client_id.as_bytes();
+        let client_uuid_bytes: &[u8] = replica_id.as_bytes();
         tx.execute_named("DELETE FROM unsynced_ops
                          WHERE
                            client_uuid = :client_uuid",
@@ -430,7 +430,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn store_replica(&self, replica_id: &ClientUuid) -> Result<(), Error> {
+    fn store_replica(&self, replica_id: &ReplicaUuid) -> Result<(), Error> {
         let tx = &self.transaction;
 
         let uuid_bytes: &[u8] = replica_id.as_bytes();
@@ -442,7 +442,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn store_replica_server(&self, api_url: &str, replica_id: &ClientUuid) -> Result<(), Error> {
+    fn store_replica_server(&self, api_url: &str, replica_id: &ReplicaUuid) -> Result<(), Error> {
         let tx = &self.transaction;
 
         let uuid_bytes: &[u8] = replica_id.as_bytes();

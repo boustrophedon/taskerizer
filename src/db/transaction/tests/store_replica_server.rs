@@ -1,7 +1,7 @@
 use crate::db::DBTransaction;
 use crate::db::tests::open_test_db;
 
-use crate::sync::test_utils::{example_client_1, example_client_2};
+use crate::sync::test_utils::{example_replica_1, example_replica_2};
 use super::arb_server_data;
 
 // the v1/v2 things don't mean anything: they're just examples.
@@ -15,7 +15,7 @@ fn test_tx_store_replica_server() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     let res = tx.store_replica_server(EXAMPLE_API_URL, &replica_id);
     assert!(res.is_ok(), "Error adding replica server: {}", res.unwrap_err());
 }
@@ -27,11 +27,11 @@ fn test_tx_store_replica_server_2() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     let res = tx.store_replica_server(EXAMPLE_API_URL, &replica_id);
     assert!(res.is_ok(), "Error adding replica server: {}", res.unwrap_err());
 
-    let replica_id = example_client_2();
+    let replica_id = example_replica_2();
     let res = tx.store_replica_server(EXAMPLE_API_URL2, &replica_id);
     assert!(res.is_ok(), "Error adding second replica server: {}", res.unwrap_err());
 }
@@ -43,11 +43,11 @@ fn test_tx_store_replica_server_duplicate_url() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     let res = tx.store_replica_server(EXAMPLE_API_URL, &replica_id);
     assert!(res.is_ok(), "Error adding replica server: {}", res.unwrap_err());
 
-    let replica_id = example_client_2();
+    let replica_id = example_replica_2();
     let res = tx.store_replica_server(EXAMPLE_API_URL, &replica_id);
     assert!(res.is_err(), "Got ok when adding same server url twice");
 
@@ -62,11 +62,11 @@ fn test_tx_store_replica_server_duplicate_replica_id() {
     let tx = db.transaction().unwrap();
 
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     let res = tx.store_replica_server(EXAMPLE_API_URL, &replica_id);
     assert!(res.is_ok(), "Error adding replica server: {}", res.unwrap_err());
 
-    let replica_id = example_client_1();
+    let replica_id = example_replica_1();
     let res = tx.store_replica_server(EXAMPLE_API_URL2, &replica_id);
     assert!(res.is_err(), "Got ok when adding same server replica id twice");
 
