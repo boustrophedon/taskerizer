@@ -46,7 +46,7 @@ proptest! {
         let mut selector = Top::new();
 
         // always selects Category::Task
-        assert_eq!(selector.select_category(), Category::Task);
+        prop_assert_eq!(selector.select_category(), Category::Task);
 
         let mut task_refs: Vec<&Task> = tasks.iter().collect();
         task_refs.sort_by_key(|t| t.priority());
@@ -54,7 +54,7 @@ proptest! {
         // sort by priority, then check the last element is always the one selected
         // remove it and repeat
         while !task_refs.is_empty() {
-            assert_eq!(selector.select_task(&task_refs), task_refs.len()-1);
+            prop_assert_eq!(selector.select_task(&task_refs), task_refs.len()-1);
             task_refs.pop();
         }
     }

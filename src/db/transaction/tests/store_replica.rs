@@ -57,7 +57,7 @@ proptest! {
 
         for replica_id in &replica_ids {
             let res = tx.store_replica(replica_id);
-            assert!(res.is_ok(), "Error adding replica: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Error adding replica: {}", res.unwrap_err());
         }
     }
 }

@@ -82,7 +82,7 @@ proptest! {
 
         for (url, replica_id) in &data {
             let res = tx.store_replica_server(url, replica_id);
-            assert!(res.is_ok(), "Error adding replica server: {}", res.unwrap_err());
+            prop_assert!(res.is_ok(), "Error adding replica server: {}", res.unwrap_err());
         }
     }
 }

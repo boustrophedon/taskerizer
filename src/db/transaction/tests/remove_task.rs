@@ -226,7 +226,7 @@ proptest! {
             let opt = db_tasks.into_iter()
                 .chain(db_breaks.into_iter())
                 .find(|(_, task)| task == to_be_removed);
-            assert!(opt.is_some(), "Task in remaining_tasks wasn't found in db: {:?}", to_be_removed);
+            prop_assert!(opt.is_some(), "Task in remaining_tasks wasn't found in db: {:?}", to_be_removed);
             let (rowid, _) = opt.unwrap();
 
             let res = tx.remove_task(&rowid);

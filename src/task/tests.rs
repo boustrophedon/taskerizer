@@ -117,7 +117,7 @@ proptest! {
         prop_assert!(res.is_ok(), "Task made from good parts returned an error: {}", res.unwrap_err());
         let task2 = res.unwrap();
 
-        assert!(task1.uuid() != task2.uuid(), "Different task uuids were the same");
-        assert!(task1 != task2, "Tasks with same parts but different uuids are equal");
+        prop_assert!(task1.uuid() != task2.uuid(), "Different task uuids were the same");
+        prop_assert!(task1 != task2, "Tasks with same parts but different uuids are equal");
     }
 }

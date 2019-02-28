@@ -123,10 +123,10 @@ proptest! {
         }
 
         let res = tx.fetch_replica_servers();
-        assert!(res.is_ok(), "Failed to fetch servers: {}", res.unwrap_err());
+        prop_assert!(res.is_ok(), "Failed to fetch servers: {}", res.unwrap_err());
 
         let servers = res.unwrap();
-        assert_eq!(servers.len(), data.len(), "Incorrect number of servers fetch from db");
-        assert_eq!(servers, data);
+        prop_assert_eq!(servers.len(), data.len(), "Incorrect number of servers fetch from db");
+        prop_assert_eq!(servers, data);
     }
 }
