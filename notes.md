@@ -610,3 +610,19 @@ so we're changing "clients" to "replicas" and then we're adding a "servers" tabl
 then on the client when we do a sync, we gather all the server urls and replica ids, and group the unsynced op messages by replica id (technically, we have an n+1 problem here since to do this i'm just going to get all the servers' replica ids, and then get the messages for each id, but the number of servers is small so it doesn't matter), and send those. (and then upon success, remove the ones that succeeded) then process the recieved messages from the response.
 
 on the server, when we recieve a sync, we process the messages and then we gather all the unsynced op messages for that client id and add them to the response.
+
+---
+
+to process the messages on the server: first, apply them. then fetch the list of replicas, and for each replica (except for the sending replica/client) we add that message to the unsynced ops table to be delivered to that client. we can optimize here by removing duplicate removes with the same task uuid.
+
+to process the messages recieved on the client: just apply them.
+
+---
+
+refactoring DBBackend and DBTransaction.
+
+Why are they separate? at first, we just had DBBackend and each operation started a new transaction (by executing directly on the connection). then I made DBTransaction to do a sequence of operations all on the same transaction. Then i changed DBBackend to be implemented on the SqliteTransaction struct, so nothing is implemented on the SqliteConnection wrapper - it just produces transactions.
+
+but the core of the abstraction is really that we have the public interface (DBBackend) and then the implementation details (DBTransaction), and we don't want to expose the implementation details as part of the interface.
+
+so i think what I should do is move the implementations of all of the operations that are currently just being passed-through (add task) into DBBackend, and remove the DBTransaction *trait* entirely, and implement that on the actual transaction wrapper struct.

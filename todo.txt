@@ -1,9 +1,7 @@
 current todo:
-	- change 'ClientUuid' type to 'ReplicaUuid' type
-	- change 'client_uuid' to 'replica_uuid' in unsynced ops table
+	- remove duplicate tests for passthrough implementations in DBBackend
 	- wrapper for DBBackend for uset op
 	- wrapper for DBBackend for replica table
-	- remove duplicate tests for passthrough implementations in DBBackend
 	- code somewhere in sync module to actually handle incoming list of USetOpMsg
 	- Testing harness for setting up servers/clients, doing operations, and syncing.
 	- actually sync over network via crdt ops
