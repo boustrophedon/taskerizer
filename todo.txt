@@ -1,5 +1,8 @@
 current todo:
 	- remove duplicate tests for passthrough implementations in DBBackend
+		- Move tests and implementations directly into DBBackend impl for SqliteTransaction
+    - get rid of DBTransaction trait, just implement everything on the SqliteTransaction wrapper struct
+		- Fix tests on DBBackend to use commit/rollback implemented on sqlitetransaction instead of accessing the sqlite transaction directly.
 	- wrapper for DBBackend for uset op
 	- wrapper for DBBackend for replica table
 	- code somewhere in sync module to actually handle incoming list of USetOpMsg

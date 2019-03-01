@@ -1,4 +1,3 @@
-mod add;
 mod list;
 mod set_current;
 mod fetch_current;
