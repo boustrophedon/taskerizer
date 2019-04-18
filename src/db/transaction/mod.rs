@@ -82,7 +82,7 @@ pub trait DBTransaction {
     /// produce an error if the task is set as the current task and it is removed.
     ///
     /// If there is no task with the corresponding UUID in the database, nothing happens.
-    fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error>;
+    fn try_remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error>;
 
     /// Store an unsynced `USetOpMsg` in the database to transmit later.
     fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error>;
@@ -315,7 +315,7 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error> {
+    fn try_remove_task_by_uuid(&self, uuid: &Uuid) -> Result<(), Error> {
         let tx = &self.transaction;
         let uuid_bytes: &[u8] = uuid.as_bytes();
         let rows_modified = tx.execute_named(

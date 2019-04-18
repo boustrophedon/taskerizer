@@ -205,7 +205,7 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
         }
 
         // If there is no current task, remove task normally
-        DBTransaction::remove_task_by_uuid(tx, uuid).map(|_| None)
+        DBTransaction::try_remove_task_by_uuid(tx, uuid).map(|_| None)
     }
 
     fn finish(self) -> Result<(), Error> {

@@ -18,7 +18,7 @@ fn test_db_remove_nonexistant_uuid() {
     let tx = db.transaction().unwrap();
     tx.add_task(&task1).expect("Adding task failed.");
 
-    let res = tx.remove_task_by_uuid(&task2_not_added.uuid());
+    let res = tx.try_remove_task_by_uuid(&task2_not_added.uuid());
     assert!(res.is_ok(), "Error removing task not inserted into db: {}", res.unwrap_err());
 
     let tasks = tx.fetch_tasks().expect("Getting tasks failed");
@@ -27,7 +27,7 @@ fn test_db_remove_nonexistant_uuid() {
 
 #[test]
 /// Add task, commit, remove task, check no task.
-fn test_db_remove_task_by_uuid() {
+fn test_db_try_remove_task_by_uuid() {
     let task = example_task_1();
 
     let mut db = open_test_db();
@@ -35,7 +35,7 @@ fn test_db_remove_task_by_uuid() {
     let tx = db.transaction().unwrap();
     tx.add_task(&task).expect("Adding task failed");
 
-    let res = tx.remove_task_by_uuid(&task.uuid());
+    let res = tx.try_remove_task_by_uuid(&task.uuid());
     assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
 
     let tasks = tx.fetch_tasks().expect("Getting tasks failed");
@@ -43,7 +43,7 @@ fn test_db_remove_task_by_uuid() {
 }
 
 #[test]
-fn test_db_remove_task_by_uuid_duplicates() {
+fn test_db_try_remove_task_by_uuid_duplicates() {
     let mut db = open_test_db();
     let tx = db.transaction().unwrap();
 
@@ -55,7 +55,7 @@ fn test_db_remove_task_by_uuid_duplicates() {
     tx.add_task(&task2).expect("Adding task failed");
 
     // remove it, and then make sure that there's still one left
-    let res = tx.remove_task_by_uuid(&task1.uuid());
+    let res = tx.try_remove_task_by_uuid(&task1.uuid());
     assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
 
     let tasks = tx.fetch_tasks().expect("Getting tasks failed");
@@ -64,7 +64,7 @@ fn test_db_remove_task_by_uuid_duplicates() {
 
 #[test]
 /// Make sure an error is still returned if we delete the task that's set as the current task.
-fn test_db_remove_task_by_uuid_current() {
+fn test_db_try_remove_task_by_uuid_current() {
     let task = example_task_1();
     let brk = example_task_break_1();
 
@@ -82,7 +82,7 @@ fn test_db_remove_task_by_uuid_current() {
     let id = all_db_tasks[0].0;
     tx.set_current_task(&id).expect("Failed to set current task");
     // try removing it, get error
-    let res = tx.remove_task_by_uuid(&task.uuid());
+    let res = tx.try_remove_task_by_uuid(&task.uuid());
     assert!(res.is_err(), "Removed current task without error when we expected one.");
     let err = res.unwrap_err();
     assert!(err.to_string().contains("FOREIGN KEY constraint failed"), "Wrong error encountered: {}", err);
@@ -92,7 +92,7 @@ fn test_db_remove_task_by_uuid_current() {
 /// Add all tasks in example list, remove and commit one at a time and make sure correct task is
 /// removed. We do this by checking that all of the other tasks are still there, because we can
 /// have duplicates in the db.
-fn test_db_remove_task_by_uuid_list() {
+fn test_db_try_remove_task_by_uuid_list() {
     let example_tasks = example_task_list();
 
     let mut db = open_test_db();
@@ -110,7 +110,7 @@ fn test_db_remove_task_by_uuid_list() {
         let to_be_removed = remaining_tasks.iter().next().expect("pop failed when remaining_tasks had len>0").clone();
         remaining_tasks.remove(to_be_removed);
 
-        let res = tx.remove_task_by_uuid(&to_be_removed.uuid());
+        let res = tx.try_remove_task_by_uuid(&to_be_removed.uuid());
         assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
 
         // get the remaining tasks from the db
@@ -139,7 +139,7 @@ proptest! {
     #![proptest_config(Config::with_cases(75))]
     #[test]
     /// Add all tasks in example list, remove one at a time and make sure correct task is removed.
-    fn test_db_remove_task_by_uuid_arb(example_tasks in arb_task_list_bounded()) {
+    fn test_db_try_remove_task_by_uuid_arb(example_tasks in arb_task_list_bounded()) {
         let mut db = open_test_db();
         let tx = db.transaction().unwrap();
 
@@ -155,7 +155,7 @@ proptest! {
             let to_be_removed = remaining_tasks.iter().next().expect("pop failed when remaining_tasks had len>0").clone();
             remaining_tasks.remove(to_be_removed);
 
-            let res = tx.remove_task_by_uuid(&to_be_removed.uuid());
+            let res = tx.try_remove_task_by_uuid(&to_be_removed.uuid());
             prop_assert!(res.is_ok(), "Removing task failed: {}", res.unwrap_err());
 
             // get the remaining tasks from the db
