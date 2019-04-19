@@ -1,67 +1,41 @@
 current todo:
-	- remove duplicate tests for passthrough implementations in DBBackend
-		- Move tests and implementations directly into DBBackend impl for SqliteTransaction
-    - get rid of DBTransaction trait, just implement everything on the SqliteTransaction wrapper struct
-		- Fix tests on DBBackend to use commit/rollback implemented on sqlitetransaction instead of accessing the sqlite transaction directly.
 	- wrapper for DBBackend for uset op
 	- wrapper for DBBackend for replica table
 	- code somewhere in sync module to actually handle incoming list of USetOpMsg
 	- Testing harness for setting up servers/clients, doing operations, and syncing.
 	- actually sync over network via crdt ops
 
-add top-level --config option, pass into `Config::new_in`
-add top-level --top option, pass into current, complete, skip commands
+Release Requirements:
+all under current todo
 
-do "if no current, select new one" inside finish() instead of dispatch/run?
-	- document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
+---
 
-maybe make ReplicaServer struct so I can return Vec<ReplicaServer> instead of Vec<(String, Uuid)> from DBTx::fetch_replica_servers
+Maybe Someday Features:
+- add top-level --config option, pass into `Config::new_in`
+- add top-level --top option, pass into current, complete, skip commands
 
-implement ToSql for SqlBlobUuid or send a pull request for [u8;16] (and other N i guess) to rusqlite
-	- i think i'd have to make a different SqlBlobUuidRef and implement ToSql on that
-
-actually, implement To/FromSql for Task struct to simplify code in multiple places
-
-change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
-
-fix sql statements in txops::get_tasks, get_breaks to be DESC on task, not ASC on category which is redundant. maybe order by time/date added instead.
-
-make it clear that tx::RowIds are only for the tasks table, or just rename it to TaskRowId or TaskId
-
-** Add user auth struct to parameters for db.
+*- Add user auth struct to parameters for db.
 	- on local db it should be like 0 or whatever
 	- otherwise, we get it from a function like `DBBackend::auth_user(user_id: usize, user_pass: String) -> Result<Option(UserAuth), Error>` which returns Ok(Some(UserAuth)) if there were no errors and the auth was valid, or Ok(None) if the auth was not valid. and error if there's a db error.
 	- make sure that a valid UserAuth cannot be created by anything other than that function!!!
 
-use terminal codes/library to bold the task description or something
+- use terminal codes/library to bold the task description or something
 
-deduplicate task validation code in Add struct and Task::from_parts
-
-deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks} (see above, implement to/fromsql for Task)
-
-specify output ordering explicitly:
+- specify output ordering explicitly:
 	- right now it is specified in the code by virtue of the sqlite query order by clause
 	- this makes tests somewhat fragile
 	- "specify explicitly" probably just means add tests that the existing output is the one we want
 	- this is now explicitly specified in the tests/list.rs test, but not in db::tests::lists
 		- I am worried that sqlite will sort unicode differently than rust, so maybe just check that the priorities are ordered. the ordering of tasks with the same priority doesn't really matter. (it will matter if we were to make an explicit row-ordering but that could be solved by using UUIDs for each row)
 
-improve row output in list by counting number of digits and using that to choose column width instead of using a hardcoded size
+- improve row output in list by counting number of digits and using that to choose column width instead of using a hardcoded size
 	- literally could just write a function "if x < 10 return 1, else if x < 100 return 2, if x < 10000 return 3 [...] up to max u32"
 	- actually just do l = [(10, 1), (100, 2), (1000,3),...] find first where x < l[i][0], return l[i][1]
-also improve row output by adding a cutoff length for task and putting ... at the end
+- also improve row output by adding a cutoff length for task and putting ... at the end
 	- problems with this: "length" is in terms of columns, and while there is a "char::width" it is unstable. could just assume char::width==1 for now and count chars
 	- there's probably a crate that does this for me
 
-
-related: improve command line argument testing:
-	- use assert_cmd/assert_cli to test clap/structopt validators
-		- esp. add validators, currently it is being tested via an additional panic inside the add
-		- panics can be removed if we have the ability to err on task creation
-		- then we can just go back to original strategy of checking that TKZCmd::dispatch/Add::run returns the correct err
-		- still somewhat unsatisfying since we're testing the same behavior in multiple places (in the command line parser, the dispatch/run function, and the task constructor)
-
-improve error messages:
+- improve error messages:
 	- make custom fail types
 	- backtraces?
 		- so the thing here is that at the db level, inside add_task, I might do something like `format_err!("Could not insert into db: {}", e)` where e is an external error
@@ -69,7 +43,39 @@ improve error messages:
 		- So what i really want is a backtrace. so the todo here is to determine whether this is what failure provides
 		- I want to be able to compose errors such that each level provides more details about what went wrong, so that when it bubbles up to the top layer I can display the top-level error message along with more details about what actually went wrong.
 		- Ideally you could almost write a paragraph. "Could not add task. Could not insert into database. Could not insert row into database. <SQLite error>". This is kind of what I get now by doing `.map_err(format_err!("[...]. {}", prev_err))`
+---
 
-write more tests for failure conditions:
+Internal Refactoring:
+- get rid of DBTransaction trait, just implement everything on the SqliteTransaction wrapper struct
+	- Fix tests on DBBackend to use commit/rollback implemented on sqlitetransaction instead of accessing the sqlite transaction directly.
+
+- do "if no current, select new one" inside finish() instead of dispatch/run?
+	- document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
+
+- maybe make ReplicaServer struct so I can return Vec<ReplicaServer> instead of Vec<(String, Uuid)> from DBTx::fetch_replica_servers
+
+- implement ToSql for SqlBlobUuid or send a pull request for [u8;16] (and other N i guess) to rusqlite
+	- i think i'd have to make a different SqlBlobUuidRef and implement ToSql on that
+- actually, implement To/FromSql for Task struct to simplify code in multiple places
+
+- change dbbackend operation for get_tasks to return one vector for each category, instead of one long one
+
+- fix sql statements in txops::get_tasks, get_breaks to be DESC on task, not ASC on category which is redundant. maybe order by time/date added instead.
+
+- make it clear that tx::RowIds are only for the tasks table, or just rename it to TaskRowId or TaskId
+
+- deduplicate task validation code in Add struct and Task::from_parts
+
+- deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks} (see above, implement to/fromsql for Task)
+
+- improve command line argument testing:
+	- use assert_cmd/assert_cli to test clap/structopt validators
+		- esp. add validators, currently it is being tested via an additional panic inside the add
+		- panics can be removed if we have the ability to err on task creation
+		- then we can just go back to original strategy of checking that TKZCmd::dispatch/Add::run returns the correct err
+		- still somewhat unsatisfying since we're testing the same behavior in multiple places (in the command line parser, the dispatch/run function, and the task constructor)
+
+- write more tests for failure conditions:
 	- corrupt db?
 	- bad permissions on config directory once config is implemented
+---
