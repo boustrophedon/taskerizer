@@ -631,12 +631,16 @@ so i think what I should do is move the implementations of all of the operations
 
 Coming back to this after a few weeks, I actually don't think removing DBTransaction trait entirely is a good idea.
 
-Basically, what I wanted to do in removing the add_task from DBTransaction was that I had duplicated tests - once for the DBBackend implementation (which just passed through to DBTransaction), and once for the DBTransaction add_task function.
+Basically, what I wanted to do in removing the `add_task` from DBTransaction was that I had duplicated tests - once for the DBBackend implementation (which just passed through to DBTransaction), and once for the DBTransaction `add_task` function.
 
 But the idea of DBBackend (at least the current iteration) is that it's a wrapper over DBTransaction - there weren't any database-specific things in it.
 
 So instead of removing the DBTransaction trait, really I should turn DBBackend into a struct and turn DBTransaction into the actual "DBBackend"- then everything is implemented in DBBackend in terms of the trait object DBTransaction that gets passed in at DBBackend construction time. Then we can have separate test suites for DBBackend that work across all implementations (sqlite, postgres, etc) and specific tests for each implementation of DBTransaction.
 
-I still don't know whether it makes sense to have separate tests for the DBBackend struct version add_task and the DBTransaction add_task though.
+I still don't know whether it makes sense to have separate tests for the DBBackend struct version `add_task` and the DBTransaction `add_task` though.
 
 I think for now everything works well enough that I should just stop working on this refactoring though.
+
+I might also be able to do something where I make a generic DBBackend struct but also keep the trait so that I can do a default implementation on the trait for the trait members that only use DBTransaction methods but aren't passthrough methods
+
+---

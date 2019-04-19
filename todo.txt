@@ -64,7 +64,7 @@ Internal Refactoring:
 
 - make it clear that tx::RowIds are only for the tasks table, or just rename it to TaskRowId or TaskId
 
-- deduplicate task validation code in Add struct and Task::from_parts
+- deduplicate task validation code in Add command struct and Task::from_parts
 
 - deduplicate/refactor task-getting code in db::transaction::DBTransaction::{get_tasks, get_breaks} (see above, implement to/fromsql for Task)
 
