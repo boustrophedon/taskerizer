@@ -1,4 +1,4 @@
-use crate::db::DBTransaction;
+use crate::db::{DBBackend, DBTransaction};
 use crate::db::tests::open_test_db;
 
 use crate::task::test_utils::{example_task_1, example_task_1_dup, example_task_break_1, example_task_list, arb_task_list_bounded};

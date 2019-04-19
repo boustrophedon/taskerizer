@@ -83,7 +83,18 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
     }
 
     fn add_task(&self, task: &Task) -> Result<(), Error> {
-        DBTransaction::add_task(self, task) 
+        let tx = &self.transaction;
+        let uuid_bytes: &[u8] = task.uuid().as_bytes();
+
+        tx.execute_named(
+            "INSERT INTO tasks (task, priority, category, uuid) VALUES (:task, :priority, :category, :uuid)",
+            &[(":task", &task.task()),
+              (":priority", &task.priority()),
+              (":category", &task.is_break()),
+              (":uuid", &uuid_bytes)
+            ],
+        ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
+        Ok(())
     }
 
     fn fetch_all_tasks(&self) -> Result<Vec<Task>, Error> {
@@ -166,7 +177,7 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
         tx.select_current_task(selector)
             .map_err(|e| format_err!("Failed to select new current task during transaction: {}", e))?;
 
-        DBTransaction::add_task(self, &old_current_task)
+        SqliteTransaction::add_task(self, &old_current_task)
             .map_err(|e| format_err!("Failed to add original task back to the db during transaction: {}", e))?;
 
         Ok(())

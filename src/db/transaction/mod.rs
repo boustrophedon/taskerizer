@@ -47,9 +47,6 @@ pub struct RowId<'tx, 'conn: 'tx> {
 }
 
 pub trait DBTransaction {
-    /// Add task to database
-    fn add_task(&self, task: &Task) -> Result<(), Error>;
-
     /// Return a `Vec` of all tasks (non-breaks) from the database. 
     fn fetch_tasks(&self) -> Result<Vec<(RowId, Task)>, Error>;
 
@@ -117,21 +114,6 @@ pub trait DBTransaction {
 }
 
 impl<'conn> DBTransaction for SqliteTransaction<'conn> {
-    fn add_task(&self, task: &Task) -> Result<(), Error> {
-        let tx = &self.transaction;
-        let uuid_bytes: &[u8] = task.uuid().as_bytes();
-
-        tx.execute_named(
-            "INSERT INTO tasks (task, priority, category, uuid) VALUES (:task, :priority, :category, :uuid)",
-            &[(":task", &task.task()),
-              (":priority", &task.priority()),
-              (":category", &task.is_break()),
-              (":uuid", &uuid_bytes)
-            ],
-        ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
-        Ok(())
-    }
-
     fn fetch_tasks(&self) -> Result<Vec<(RowId, Task)>, Error> {
         let tx = &self.transaction;
 
