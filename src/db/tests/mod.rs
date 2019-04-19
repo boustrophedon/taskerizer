@@ -14,6 +14,10 @@ mod complete;
 mod skip;
 mod remove_by_uuid;
 
+mod store_uset_op;
+mod fetch_uset_op;
+mod clear_uset_op;
+
 // utility functions
 
 /// Open an in-memory db for testing. If the environment variable `TKZR_TEST_SAVE_DB` is set, the

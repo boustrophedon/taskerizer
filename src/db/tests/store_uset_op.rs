@@ -1,4 +1,4 @@
-use crate::db::DBTransaction;
+use crate::db::DBBackend;
 use crate::db::tests::open_test_db;
 
 use crate::sync::{USetOpMsg, ReplicaUuid};

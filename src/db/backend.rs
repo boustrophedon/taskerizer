@@ -8,6 +8,7 @@ use crate::db::transaction::SqlBlobUuid;
 
 use crate::selection::SelectionStrategy;
 
+use crate::sync::{USetOp, USetOpMsg, ReplicaUuid};
 use crate::task::{Category, Task};
 
 
@@ -42,6 +43,15 @@ pub trait DBBackend {
     ///
     /// This is used for network sync and isn't exposed in a CLI command currently.
     fn remove_task_by_uuid(&self, uuid: &Uuid) -> Result<Option<Task>, Error>;
+
+    /// Store an unsynced `USetOpMsg` in the database to transmit later.
+    fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error>;
+
+    /// Fetch all unsynced `USetOpMsg`s directed to a given replica.
+    fn fetch_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<Vec<USetOpMsg>, Error>;
+
+    /// Clear all unsynced `USetOpMsg`s directed to a given replica.
+    fn clear_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<(), Error>;
 
     /// Finish database operations, committing to the database. If this is not called, the
     /// transaction is rolled back.
@@ -253,6 +263,105 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
 
         // If there is no current task, remove task normally
         DBTransaction::try_remove_task_by_uuid(tx, uuid).map(|_| None)
+    }
+
+    fn store_uset_op_msg(&self, uset_op_msg: &USetOpMsg) -> Result<(), Error> {
+        let tx = &self.transaction;
+        let replica_uuid_bytes: &[u8] = uset_op_msg.deliver_to.as_bytes();
+
+        match &uset_op_msg.op {
+            USetOp::Add(task) => {
+                let uuid_bytes: &[u8] = task.uuid().as_bytes();
+                tx.execute_named(
+                    "INSERT INTO unsynced_ops
+                    (is_add_operation, task, priority, category, task_uuid, replica_uuid)
+                    VALUES (:is_add_operation, :task, :priority, :category, :task_uuid, :replica_uuid)",
+                    &[(":is_add_operation", &true),
+                      (":task", &task.task()),
+                      (":priority", &task.priority()),
+                      (":category", &task.is_break()),
+                      (":task_uuid", &uuid_bytes),
+                      (":replica_uuid", &replica_uuid_bytes)
+                    ],
+                ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
+            },
+            USetOp::Remove(task_uuid) => {
+                let uuid_bytes: &[u8] = task_uuid.as_bytes();
+                tx.execute_named(
+                    "INSERT INTO unsynced_ops
+                    (is_add_operation, task_uuid, replica_uuid)
+                    VALUES (:is_add_operation, :task_uuid, :replica_uuid)",
+                    &[(":is_add_operation", &false),
+                      (":task_uuid", &uuid_bytes),
+                      (":replica_uuid", &replica_uuid_bytes)
+                    ],
+                ).map_err(|e| format_err!("Error inserting task into database: {}", e))?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn fetch_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<Vec<USetOpMsg>, Error> {
+        let tx = &self.transaction;
+        let replica_uuid_bytes: &[u8] = replica_id.as_bytes();
+
+        let mut stmt = tx.prepare_cached(
+            "SELECT is_add_operation, task, priority, category, task_uuid, replica_uuid
+            FROM unsynced_ops
+            WHERE replica_uuid = :replica_uuid
+            ORDER BY id
+            ")
+            .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
+
+        let rows = stmt.query_map(&[&replica_uuid_bytes,], |row| {
+                let is_add = row.get(0);
+                if is_add {
+                    let sql_task_uuid: SqlBlobUuid = row.get(4);
+                    let sql_replica_uuid: SqlBlobUuid = row.get(5);
+                    let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_task_uuid.uuid)
+                        .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?;
+                    let op = USetOp::Add(task);
+                    let deliver_to = sql_replica_uuid.uuid;
+
+                    // type annotation to help compiler infer err type of result here,
+                    // instead of writing out the full type of `rows`
+                    let res: Result<USetOpMsg, Error> = Ok(USetOpMsg {op, deliver_to});
+                    res
+                }
+                else {
+                    let sql_task_uuid: SqlBlobUuid = row.get(4);
+                    let sql_replica_uuid: SqlBlobUuid = row.get(5);
+                    let op = USetOp::Remove(sql_task_uuid.uuid);
+                    let deliver_to = sql_replica_uuid.uuid;
+
+                    Ok(USetOpMsg {op, deliver_to})
+                }
+             })
+            .map_err(|e| format_err!("Error executing current task query: {}", e))?;
+
+        let mut msgs = Vec::new();
+        // There are three kinds of errors that can occur:
+        // The executing the query can error (eg syntax error)
+        // Deserializing a row can error (internal error? like there's a null byte in a text column or something?)
+        // Task::from_parts can error (eg priority=0) (this is why the actual value returned by the query map is a Result)
+        for row_res in rows {
+            let msg_result = row_res.map_err(|e| format_err!("Error deserializing msg row from unsynced_ops table: {}", e))?;
+            msgs.push(msg_result?);
+        }
+
+        Ok(msgs)
+    }
+
+    fn clear_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<(), Error> {
+        let tx = &self.transaction;
+        let replica_uuid_bytes: &[u8] = replica_id.as_bytes();
+        tx.execute_named("DELETE FROM unsynced_ops
+                         WHERE
+                           replica_uuid = :replica_uuid",
+                           &[(":replica_uuid", &replica_uuid_bytes)])
+            .map_err(|e| format_err!("Error clearing unsyced ops: {}", e))?;
+        Ok(())
     }
 
     fn finish(self) -> Result<(), Error> {
