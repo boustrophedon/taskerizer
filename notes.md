@@ -626,3 +626,17 @@ Why are they separate? at first, we just had DBBackend and each operation starte
 but the core of the abstraction is really that we have the public interface (DBBackend) and then the implementation details (DBTransaction), and we don't want to expose the implementation details as part of the interface.
 
 so i think what I should do is move the implementations of all of the operations that are currently just being passed-through (add task) into DBBackend, and remove the DBTransaction *trait* entirely, and implement that on the actual transaction wrapper struct.
+
+---
+
+Coming back to this after a few weeks, I actually don't think removing DBTransaction trait entirely is a good idea.
+
+Basically, what I wanted to do in removing the add_task from DBTransaction was that I had duplicated tests - once for the DBBackend implementation (which just passed through to DBTransaction), and once for the DBTransaction add_task function.
+
+But the idea of DBBackend (at least the current iteration) is that it's a wrapper over DBTransaction - there weren't any database-specific things in it.
+
+So instead of removing the DBTransaction trait, really I should turn DBBackend into a struct and turn DBTransaction into the actual "DBBackend"- then everything is implemented in DBBackend in terms of the trait object DBTransaction that gets passed in at DBBackend construction time. Then we can have separate test suites for DBBackend that work across all implementations (sqlite, postgres, etc) and specific tests for each implementation of DBTransaction.
+
+I still don't know whether it makes sense to have separate tests for the DBBackend struct version add_task and the DBTransaction add_task though.
+
+I think for now everything works well enough that I should just stop working on this refactoring though.

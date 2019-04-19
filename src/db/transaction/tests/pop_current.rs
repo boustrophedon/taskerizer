@@ -33,7 +33,7 @@ fn test_tx_pop_current_task_1() {
     tx.set_current_task(&id).unwrap();
 
     // pop the current task and verify it's the one we set
-    let res = tx.pop_current_task(); 
+    let res = tx.pop_current_task();
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let id_opt = res.unwrap();
@@ -60,7 +60,7 @@ fn test_tx_pop_current_task_2() {
     tx.set_current_task(&id).unwrap();
 
     // pop the current task and verify it's the one we set
-    let res = tx.pop_current_task(); 
+    let res = tx.pop_current_task();
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let id_opt = res.unwrap();
@@ -92,7 +92,7 @@ proptest! {
             tx.set_current_task(&id).unwrap();
 
             // verify we get back the one we set
-            let res = tx.pop_current_task(); 
+            let res = tx.pop_current_task();
             prop_assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
             let id_opt = res.unwrap();

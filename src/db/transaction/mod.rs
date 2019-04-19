@@ -15,7 +15,7 @@ use crate::sync::{USetOp, USetOpMsg, ReplicaUuid};
 
 // TODO: rusqlite has a FromSql<i128> but not u128, whereas Uuid has From<u128> but not From<i128>.
 // so add a FromSql<u128> to rusqlite.
-struct SqlBlobUuid {
+pub struct SqlBlobUuid {
     pub uuid: Uuid,
 }
 
@@ -55,10 +55,6 @@ pub trait DBTransaction {
 
     /// Set the current task to be the task with id `id`.
     fn set_current_task(&self, id: &RowId) -> Result<(), Error>;
-
-    /// Returns the currently selected task if there is one, or None if there are no tasks in the
-    /// database. This function should never return None if there are tasks in the database.
-    fn fetch_current_task(&self) -> Result<Option<Task>, Error>;
 
     /// Returns the `RowId` of the currently selected task if there is one, or None if there are no
     /// tasks in the database. The current task is then set to None, but the task itself is not
@@ -189,45 +185,6 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
 
         Ok(())
 
-    }
-
-    fn fetch_current_task(&self) -> Result<Option<Task>, Error> {
-        let tx = &self.transaction;
-        let mut stmt = tx.prepare_cached(
-            "SELECT task, priority, category, uuid
-            FROM tasks
-            WHERE id = (
-                SELECT task_id FROM current
-                WHERE id = 1
-            )
-            ")
-            .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
-
-        let rows: Vec<Result<Task, Error>> = stmt.query_map(NO_PARAMS, |row| {
-                let sql_uuid: SqlBlobUuid = row.get(3);
-                Ok(
-                Task::from_parts(row.get(0), row.get(1), row.get(2), sql_uuid.uuid)
-                    .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?
-                )
-             })
-            .map_err(|e| format_err!("Error executing current task query: {}", e))?
-            .flat_map(|r| r)
-            .collect();
-
-        // No rows -> no current task
-        if rows.is_empty() {
-            return Ok(None);
-        }
-
-        if rows.len() > 1 {
-            return Err(format_err!("Multiple tasks selected in current task query. {} tasks, selected {:?}", rows.len(), rows))
-        }
-
-        let current_task = rows.into_iter().next()
-            .expect("No rows even though we checked there was one")
-            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-
-        Ok(Some(current_task))
     }
 
     fn pop_current_task(&self) -> Result<Option<(RowId, Task)>, Error> {

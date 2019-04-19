@@ -3,12 +3,16 @@ use crate::db::tests::open_test_db;
 
 use crate::task::test_utils::{example_task_1, example_task_break_1, arb_task_list};
 
+// NOTE: even though fetch_current_task has been moved from DBTransaction (or SqliteTransaction
+// if/when DBTransaction gets removed) to DBBackend, I'm leaving these tests here because they access
+// DBTransaction internals
+
 #[test]
 fn test_tx_fetch_current_task_empty() {
     let mut db = open_test_db();
     let tx = db.transaction().unwrap();
 
-    let res = DBTransaction::fetch_current_task(&tx);
+    let res = tx.fetch_current_task();
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -31,7 +35,7 @@ fn test_tx_fetch_current_task_1() {
     tx.set_current_task(id).unwrap();
 
     // get the current task and verify it's the one we set
-    let res = DBTransaction::fetch_current_task(&tx); 
+    let res = tx.fetch_current_task();
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -57,7 +61,7 @@ fn test_tx_fetch_current_task_2() {
     tx.set_current_task(id).unwrap();
 
     // get the current task and verify it's the one we set
-    let res = DBTransaction::fetch_current_task(&tx); 
+    let res = tx.fetch_current_task();
     assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
     let task_opt = res.unwrap();
@@ -88,7 +92,7 @@ proptest! {
             tx.set_current_task(&id).unwrap();
 
             // verify we get back the one we set
-            let res = DBTransaction::fetch_current_task(&tx); 
+            let res = tx.fetch_current_task();
             prop_assert!(res.is_ok(), "Error getting current task: {}", res.unwrap_err());
 
             let task_opt = res.unwrap();
