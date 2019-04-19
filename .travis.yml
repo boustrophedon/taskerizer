@@ -27,7 +27,10 @@ jobs:
         - echo $CARGO_HOME
         - cargo kcov --version || cargo install cargo-kcov
         - |
-            [[ -x $HOME/.cargo/bin/kcov ]] && kcov --version | grep -q 'kcov 36' && echo "kcov bin found in cache" || cargo kcov --print-install-kcov-sh | sh
+            if ([[ -x $HOME/.cargo/bin/kcov ]] && (kcov --version | grep -q 'kcov 36'))
+              then echo "kcov bin found in cache" && export KCOV_FOUND=1
+            fi
+        - if [[ -z $KCOV_FOUND ]]; then (cargo kcov --print-install-kcov-sh | bash); fi
         # sqlite3-sys outputs a bindgen file that kcov picks up when we link dead code for whatever reason
         - cargo kcov --verbose --coveralls -- --exclude-pattern="bindgen.rs,$HOME/.cargo"
         # clean again to get rid of artifacts with different link flags
