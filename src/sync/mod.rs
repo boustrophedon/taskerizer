@@ -1,3 +1,5 @@
+use std::mem::drop;
+
 use crate::task::Task;
 use crate::db::DBBackend;
 
@@ -10,6 +12,34 @@ pub type ReplicaUuid = Uuid;
 mod tests;
 #[cfg(test)]
 pub(crate) mod test_utils;
+
+/// Apply a sequence of `USetOp` U-Set operations to the database. If one of the operations fails,
+/// the entire transaction is reverted. The result contains a `Vec<String>` which is text to return
+/// to the user - see `USetOp::apply_to_db` for more information.
+///
+/// This function consumes the database transaction and commits it upon success or rolls back upon
+/// failure.
+pub fn apply_all_uset_ops(tx: impl DBBackend, operations: &[USetOp]) -> Result<Vec<String>, Error> {
+    let mut output: Vec<String> = Vec::new();
+    for op in operations {
+        let res = op.apply_to_db(&tx);
+        match res {
+            Ok(v) => { output.extend(v) },
+            Err(e) => {
+                // calling drop without calling finish on the transaction rolls it back.
+                // technically, we don't need to call drop here because it is dropped automatically,
+                // but it's better to do it explicitly.
+                // FIXME: add an actual rollback wrapper on DBBackend and call it here
+                drop(tx);
+
+                return Err(format_err!("Error when applying incoming USet operations from remote replica: {}.", e));
+            },
+        }
+    }
+
+    tx.finish().map_err(|e| format_err!("Error completing transaction while applying U-Set operations: {}", e))?;
+    return Ok(output);
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum USetOp {

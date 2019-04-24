@@ -46,6 +46,7 @@ Maybe Someday Features:
 Internal Refactoring:
 - get rid of DBTransaction trait, just implement everything on the SqliteTransaction wrapper struct
 	- Fix tests on DBBackend to use commit/rollback implemented on sqlitetransaction instead of accessing the sqlite transaction directly.
+- Related: implement rollback on DBBackend
 
 - do "if no current, select new one" inside finish() instead of dispatch/run?
 	- document (in the transaction docs) the "current task should always be set by the end of a transaction, unless there are no tasks" invariant
