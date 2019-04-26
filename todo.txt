@@ -1,7 +1,10 @@
 current todo:
-	- code somewhere in sync module to actually handle incoming list of USetOpMsg
 	- Testing harness for setting up servers/clients, doing operations, and syncing.
+		- Test that serve subcommand runs without error on default port
+		- Test that server is actually responding to requests
+		- maybe add a /health endpoint and implement testing on that first
 	- actually sync over network via crdt ops
+		- Add in sync_client function to end of subcommand processing if command is not serve
 
 Release Requirements:
 all under current todo
