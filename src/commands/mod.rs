@@ -72,6 +72,12 @@ pub enum TKZCmd {
     /// Skip the current task and choose a new one. If there is only one task in the database, it
     /// will be chosen again.
     Skip,
+
+    #[structopt(name = "serve")]
+    /// Act as a replication server, accepting requests to sync tasks and responding with
+    /// unsynced tasks to client replicas. The default port is 24096 and the default address to
+    /// listen on is `localhost`.
+    Serve(Serve)
 }
 
 impl TKZCmd {
@@ -132,6 +138,9 @@ pub use self::complete::Complete;
 
 mod skip;
 pub use self::skip::Skip;
+
+mod serve;
+pub use self::serve::Serve;
 
 #[derive(StructOpt, Debug)]
 pub struct Break {

@@ -6,6 +6,9 @@ use crate::db::DBBackend;
 use failure::Error;
 use uuid::Uuid;
 
+pub mod server;
+pub mod client;
+
 pub type ReplicaUuid = Uuid;
 
 #[cfg(test)]

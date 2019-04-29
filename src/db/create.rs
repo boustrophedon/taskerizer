@@ -14,7 +14,7 @@ impl SqliteBackend {
         let mut path = path.as_ref().to_path_buf();
         
         if !path.is_dir() {
-            return Err(format_err!("Database directory path \"{}\" is not a directory, or we do not have permission to access it.",
+            return Err(format_err!("Database directory path {} is not a directory, or we do not have permission to access it.",
                                    path.to_string_lossy()));
         }
 
