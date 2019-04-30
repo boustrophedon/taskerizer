@@ -47,6 +47,9 @@ Maybe Someday Features:
 ---
 
 Internal Refactoring:
+
+- make all methods on DBBackend take a &mut self and use savepoints (https://docs.rs/rusqlite/0.18.0/rusqlite/struct.Transaction.html#method.savepoint) everywhere that does an insert but could fail. I think it might actually only be store_replica_server though, which already does that.
+
 - get rid of DBTransaction trait, just implement everything on the SqliteTransaction wrapper struct
 	- Fix tests on DBBackend to use commit/rollback implemented on sqlitetransaction instead of accessing the sqlite transaction directly.
 - Related: implement rollback on DBBackend

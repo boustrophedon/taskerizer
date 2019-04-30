@@ -53,19 +53,18 @@ pub trait DBBackend {
     /// Clear all unsynced `USetOpMsg`s directed to a given replica.
     fn clear_uset_op_msgs(&self, replica_id: &ReplicaUuid) -> Result<(), Error>;
 
-    /// Add a member to the replica set. This does not do any network communication, it just stores
-    /// the data. Adding a replica by itself without adding a url to the `servers` table
-    /// implies this replica is just a client.
-    fn store_replica(&self, replica_id: &ReplicaUuid) -> Result<(), Error>;
+    /// Add a client to the replica set. This does not do any network communication; it just stores
+    /// the data.
+    fn store_replica_client(&self, replica_id: &ReplicaUuid) -> Result<(), Error>;
 
-    /// Add a server to the replica set. This does not do any network communication, it just stores
+    /// Add a server to the replica set. This does not do any network communication; it just stores
     /// the data.
     // TODO maybe use an actual url type for the url parameter?
-    fn store_replica_server(&self, api_url: &str, replica_id: &ReplicaUuid) -> Result<(), Error>;
+    fn store_replica_server(&mut self, replica_id: &ReplicaUuid, api_url: &str) -> Result<(), Error>;
 
-    /// Fetch all known replica servers from db
+    /// Fetch all replicas from db. Returns a Vec of `(replica_id, Option<api_url>)`.
     // TODO maybe use an actual url type for the urls, use ReplicaServer type instead of tuple
-    fn fetch_replica_servers(&self) -> Result<Vec<(String, Uuid)>, Error>;
+    fn fetch_replicas(&self) -> Result<Vec<(ReplicaUuid, Option<String>)>, Error>;
 
     /// Finish database operations, committing to the database. If this is not called, the
     /// transaction is rolled back.
@@ -378,7 +377,7 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn store_replica(&self, replica_id: &ReplicaUuid) -> Result<(), Error> {
+    fn store_replica_client(&self, replica_id: &ReplicaUuid) -> Result<(), Error> {
         let tx = &self.transaction;
 
         let uuid_bytes: &[u8] = replica_id.as_bytes();
@@ -390,48 +389,57 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
         Ok(())
     }
 
-    fn store_replica_server(&self, api_url: &str, replica_id: &ReplicaUuid) -> Result<(), Error> {
-        let tx = &self.transaction;
+    fn store_replica_server(&mut self, replica_id: &ReplicaUuid, api_url: &str) -> Result<(), Error> {
+        let tx = &mut self.transaction;
+        // NOTE: if inserting into the servers table fails, we want to roll back the insert into
+        // the replica table as well. so we use a savepoint here.
+        let mut sp = tx.savepoint()?;
 
         let uuid_bytes: &[u8] = replica_id.as_bytes();
-        tx.execute_named(
+        sp.execute_named(
             "INSERT INTO replicas (replica_uuid) VALUES (:replica_uuid)",
             &[(":replica_uuid", &uuid_bytes),
             ],
         ).map_err(|e| format_err!("Error inserting server id into database: {}", e))?;
-        tx.execute_named(
+
+        let res = sp.execute_named(
             "INSERT INTO servers (api_url, replica_id) VALUES (:api_url, last_insert_rowid())",
             &[(":api_url", &api_url),
             ],
-        ).map_err(|e| format_err!("Error inserting server url into database: {}", e))?;
-        Ok(())
+        ).map_err(|e| format_err!("Error inserting server url into database: {}", e));
+
+        match res {
+            Ok(_) => {sp.commit()?; return Ok(())},
+            Err(e) => {sp.rollback()?; return Err(e)},
+        }
     }
 
-    fn fetch_replica_servers(&self) -> Result<Vec<(String, Uuid)>, Error> {
+    fn fetch_replicas(&self) -> Result<Vec<(Uuid, Option<String>)>, Error> {
         let tx = &self.transaction;
 
         let mut stmt = tx.prepare_cached(
-            "SELECT servers.api_url, replicas.replica_uuid
-            FROM servers
-            INNER JOIN replicas
+            "SELECT replicas.replica_uuid, servers.api_url
+            FROM replicas
+            LEFT JOIN servers
             ON servers.replica_id = replicas.id
             ")
-            .map_err(|e| format_err!("Error preparing fetch replica servers query: {}", e))?;
+            .map_err(|e| format_err!("Error preparing fetch replicas query: {}", e))?;
 
         let rows = stmt.query_map(NO_PARAMS, |row| {
-            let sql_uuid: SqlBlobUuid = row.get(1);
-            (row.get(0), sql_uuid.uuid)
+            let sql_uuid: SqlBlobUuid = row.get(0);
+            (sql_uuid.uuid, row.get(1))
         })
-        .map_err(|e| format_err!("Error fetching replica servers from database: {}", e))?;
+        .map_err(|e| format_err!("Error fetching replicas from database: {}", e))?;
 
-        let mut servers: Vec<(String, Uuid)> = Vec::new();
-        for server_res in rows {
-            let server_data = server_res.map_err(|e| format_err!("Error deserializing row from database: {}", e))?;
-            servers.push(server_data);
+        let mut replicas: Vec<(Uuid, Option<String>)> = Vec::new();
+        for replica_res in rows {
+            let replica_data = replica_res.map_err(|e| format_err!("Error deserializing row from database: {}", e))?;
+            replicas.push(replica_data);
         }
 
-        Ok(servers)
+        Ok(replicas)
     }
+
 
     fn finish(self) -> Result<(), Error> {
         self.commit()

@@ -6,12 +6,12 @@ use super::arb_replica_ids;
 
 #[test]
 /// Add client
-fn test_tx_store_replica() {
+fn test_tx_store_replica_client() {
     let mut db = open_test_db();
     let tx = db.transaction().unwrap();
 
     let replica_id = example_replica_1();
-    let res = tx.store_replica(&replica_id);
+    let res = tx.store_replica_client(&replica_id);
     assert!(res.is_ok(), "Error adding replica: {}", res.unwrap_err());
 }
 
@@ -22,11 +22,11 @@ fn test_tx_store_replica_2() {
     let tx = db.transaction().unwrap();
 
     let replica_id = example_replica_1();
-    let res = tx.store_replica(&replica_id);
+    let res = tx.store_replica_client(&replica_id);
     assert!(res.is_ok(), "Error adding replica: {}", res.unwrap_err());
 
     let replica_id = example_replica_2();
-    let res = tx.store_replica(&replica_id);
+    let res = tx.store_replica_client(&replica_id);
     assert!(res.is_ok(), "Error adding second replica: {}", res.unwrap_err());
 }
 
@@ -38,11 +38,11 @@ fn test_tx_store_replica_duplicate_replica_id() {
 
 
     let replica_id = example_replica_1();
-    let res = tx.store_replica(&replica_id);
+    let res = tx.store_replica_client(&replica_id);
     assert!(res.is_ok(), "Error adding replica: {}", res.unwrap_err());
 
     let replica_id = example_replica_1();
-    let res = tx.store_replica(&replica_id);
+    let res = tx.store_replica_client(&replica_id);
     assert!(res.is_err(), "Got ok when adding same replica id twice");
 
     let err = res.unwrap_err();
@@ -56,7 +56,7 @@ proptest! {
         let tx = db.transaction().unwrap();
 
         for replica_id in &replica_ids {
-            let res = tx.store_replica(replica_id);
+            let res = tx.store_replica_client(replica_id);
             prop_assert!(res.is_ok(), "Error adding replica: {}", res.unwrap_err());
         }
     }
