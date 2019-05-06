@@ -151,7 +151,8 @@ fn process_clear(config: &Config, replica_id: ReplicaUuid) -> Result<(), failure
     let tx = db.transaction()?;
 
     tx.clear_uset_op_msgs(&replica_id)
-        .map_err(|e| format_err!("Failed to clear USet ops for replica {} during incoming clear operation: {}", &replica_id, e))
+        .map_err(|e| format_err!("Failed to clear USet ops for replica {} during incoming clear operation: {}", &replica_id, e))?;
+    tx.finish()
 }
 
 /// Process incoming list of USet operations and return unsynced ops. If `replica_id` is unknown,
@@ -163,10 +164,9 @@ fn process_sync(config: &Config, replica_id: ReplicaUuid, incoming_ops: &[USetOp
     let mut db = config.db()?;
 
     let tx = db.transaction()?;
-    apply_all_uset_ops(tx, incoming_ops)
+    apply_all_uset_ops(&tx, incoming_ops)
         .map_err(|e| format_err!("Failed to apply all uset ops during incoming sync operation: {}", e))?;
 
-    let tx = db.transaction()?;
     let replicas = tx.fetch_replicas()
         .map_err(|e| format_err!("Failed to fetch replicas during incoming sync operation: {}", e))?;
 
@@ -175,6 +175,7 @@ fn process_sync(config: &Config, replica_id: ReplicaUuid, incoming_ops: &[USetOp
         let msgs = tx.fetch_uset_op_msgs(&replica_id)
             .map_err(|e| format_err!("Failed to fetch USet ops for replica {} during incoming sync operation: {}", &replica_id, e))?;
 
+        tx.finish()?;
         // FIXME: I don't understand why the compiler complains if I don't use `return` here.
         return Ok(msgs.into_iter().map(|msg| msg.op).collect());
     }
@@ -185,6 +186,7 @@ fn process_sync(config: &Config, replica_id: ReplicaUuid, incoming_ops: &[USetOp
             .map_err(|e| format_err!("Failed to store new client replica {} during incoming sync operation: {}", &replica_id, e))?;
         let tasks = tx.fetch_all_tasks()?;
 
+        tx.finish()?;
         return Ok(tasks.into_iter().map(|t| USetOp::Add(t)).collect());
     }
 }

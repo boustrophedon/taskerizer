@@ -1,5 +1,4 @@
 current todo:
-	- Make `sync::apply_all_uset_ops` take a &impl DBBackend instead of consuming it
 	- Testing harness for setting up servers/clients, doing operations, and syncing.
 		- Test that serve subcommand runs without error on default port
 		- Test that server is actually responding to requests
