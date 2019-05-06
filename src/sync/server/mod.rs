@@ -134,22 +134,24 @@ impl TkzrServer {
 }
 
 fn handle_sync_route(config: web::Data<Config>, replica_id: web::Path<ReplicaUuid>, incoming_ops: web::Json<Vec<USetOp>>)
-    -> Result<web::Json<Vec<USetOp>>, failure::Error> {
-        process_sync(&config, replica_id.into_inner(), &incoming_ops).map(|ops| web::Json(ops))
+        -> Result<web::Json<Vec<USetOp>>, failure::Error> {
+    let mut db = config.db()?;
+    let tx = db.transaction()?;
+
+    process_sync(tx, replica_id.into_inner(), &incoming_ops).map(|ops| web::Json(ops))
 }
 
 fn handle_clear_route(config: web::Data<Config>, replica_id: web::Path<ReplicaUuid>)
-    -> Result<(), failure::Error> {
-        process_clear(&config, replica_id.into_inner())
+        -> Result<(), failure::Error> {
+    let mut db = config.db()?;
+    let tx = db.transaction()?;
+
+    process_clear(tx, replica_id.into_inner())
 }
 
 /// Clear all pending USetOpMsgs for the replica. The client should call this method after a
 /// successful sync.
-fn process_clear(config: &Config, replica_id: ReplicaUuid) -> Result<(), failure::Error> {
-    let mut db = config.db()?;
-
-    let tx = db.transaction()?;
-
+fn process_clear(tx: impl DBBackend, replica_id: ReplicaUuid) -> Result<(), failure::Error> {
     tx.clear_uset_op_msgs(&replica_id)
         .map_err(|e| format_err!("Failed to clear USet ops for replica {} during incoming clear operation: {}", &replica_id, e))?;
     tx.finish()
@@ -160,10 +162,7 @@ fn process_clear(config: &Config, replica_id: ReplicaUuid) -> Result<(), failure
 ///
 /// The pending USetOpMsgs in the database are not cleared - the client must call clear once it has
 /// received all of the messages.
-fn process_sync(config: &Config, replica_id: ReplicaUuid, incoming_ops: &[USetOp]) -> Result<Vec<USetOp>, failure::Error> {
-    let mut db = config.db()?;
-
-    let tx = db.transaction()?;
+fn process_sync(tx: impl DBBackend, replica_id: ReplicaUuid, incoming_ops: &[USetOp]) -> Result<Vec<USetOp>, failure::Error> {
     apply_all_uset_ops(&tx, incoming_ops)
         .map_err(|e| format_err!("Failed to apply all uset ops during incoming sync operation: {}", e))?;
 
