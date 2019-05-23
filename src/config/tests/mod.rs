@@ -114,3 +114,22 @@ fn test_config_new_in_custom_exists() {
     assert_eq!(config.db_path, custom_config.db_path);
     assert_eq!(config.break_cutoff, custom_config.break_cutoff);
 }
+
+#[test]
+/// Open test config, open temp database, close database, drop dir and check it isn't in fs
+/// anymore.
+fn test_test_config() {
+    use crate::db::DBBackend;
+
+    let (dir, config) = Config::test_config();
+    let path = dir.path().to_path_buf();
+
+    let mut db = config.db().unwrap();
+    let tx = db.transaction().unwrap();
+    tx.metadata().expect("failed to get metadata");
+
+    drop(config);
+    drop(dir);
+
+    assert!(!path.exists(), "Temp dir path exists after dropping");
+}

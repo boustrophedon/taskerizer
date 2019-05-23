@@ -13,6 +13,8 @@ use crate::db::SqliteBackend;
 #[cfg(test)]
 mod tests;
 
+const DEFAULT_BREAK_CUTOFF: f32 = 0.35;
+
 /// Configuration parameters.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -145,10 +147,39 @@ impl FromStr for Config {
 impl Default for Config {
     fn default() -> Config {
         let db_path = Config::project_dirs().data_local_dir().into();
-        let break_cutoff = 0.35;
+        let break_cutoff = DEFAULT_BREAK_CUTOFF;
         Config {
             db_path,
             break_cutoff,
         }
+    }
+}
+
+#[cfg(test)]
+use tempfile::TempDir;
+
+#[cfg(test)]
+impl Config {
+    /// Create a `Config` for testing purposes that creates a temporary directory for the database.
+    /// The `break_cutoff` is set to `DEFAULT_BREAK_CUTOFF`.
+    ///
+    /// The TempDir is returned so that the directory can outlive the lifetime of the `Config` -
+    /// when the `TempDir` is dropped the Config's database directory is destroyed.
+    ///
+    // FIXME: wrap the tempdir in a `ConfigTempDir` with a PhantomData<Config> that ties the
+    // lifetime of the tempdir to the config.
+    //
+    // TODO: do the same thing as db::open_test_db and add environment variable that leaks the
+    // directory in order to save it for examination. probably need to make wrapper to do this
+    pub fn test_config() -> (TempDir, Config) {
+        let temp_dir = tempfile::tempdir().expect("Tempdir could not be created");
+
+        let db_path = temp_dir.path().to_path_buf();
+        let break_cutoff = DEFAULT_BREAK_CUTOFF;
+
+        (temp_dir, Config {
+            db_path,
+            break_cutoff,
+        })
     }
 }
