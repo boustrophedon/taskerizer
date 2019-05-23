@@ -1,5 +1,6 @@
 use failure::Error;
 use rusqlite::NO_PARAMS;
+use rusqlite::Result as SQLResult;
 use uuid::Uuid;
 
 use crate::db::DBMetadata;
@@ -92,9 +93,9 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             "SELECT version, date_created FROM metadata WHERE id = 1",
             NO_PARAMS,
             |row| {
-                let version = row.get(0);
-                let date_created = row.get(1);
-                (version, date_created)
+                let version = row.get_unwrap(0);
+                let date_created = row.get_unwrap(1);
+                Ok((version, date_created))
             }
         ).map_err(|e| format_err!("Error getting metadata from database: {}", e))?;
 
@@ -148,15 +149,13 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             ")
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
-        let rows: Vec<Result<Task, Error>> = stmt.query_map(NO_PARAMS, |row| {
-                let sql_uuid: SqlBlobUuid = row.get(3);
+        let rows: Vec<SQLResult<(String, u32, bool, Uuid)>> = stmt.query_map(NO_PARAMS, |row| {
+                let sql_uuid: SqlBlobUuid = row.get(3)?;
                 Ok(
-                Task::from_parts(row.get(0), row.get(1), row.get(2), sql_uuid.uuid)
-                    .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?
+                (row.get(0)?, row.get(1)?, row.get(2)?, sql_uuid.uuid)
                 )
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?
-            .flat_map(|r| r)
             .collect();
 
         // No rows -> no current task
@@ -168,9 +167,11 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             return Err(format_err!("Multiple tasks selected in current task query. {} tasks, selected {:?}", rows.len(), rows))
         }
 
-        let current_task = rows.into_iter().next()
+        let current_task: Task = rows.into_iter().next()
             .expect("No rows even though we checked there was one")
-            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            .map(|t| Ok(Task::from_parts(t.0, t.1, t.2, t.3)?))
+            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?
+            .map_err(|e: Error| format_err!("Invalid task was read from database row: {}", e))?;
 
         Ok(Some(current_task))
     }
@@ -328,27 +329,25 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error preparing current task query: {}", e))?;
 
         let rows = stmt.query_map(&[&replica_uuid_bytes,], |row| {
-                let is_add = row.get(0);
+                let is_add = row.get(0)?;
                 if is_add {
-                    let sql_task_uuid: SqlBlobUuid = row.get(4);
-                    let sql_replica_uuid: SqlBlobUuid = row.get(5);
-                    let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_task_uuid.uuid)
-                        .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?;
-                    let op = USetOp::Add(task);
-                    let deliver_to = sql_replica_uuid.uuid;
-
-                    // type annotation to help compiler infer err type of result here,
-                    // instead of writing out the full type of `rows`
-                    let res: Result<USetOpMsg, Error> = Ok(USetOpMsg {op, deliver_to});
-                    res
+                    let sql_task_uuid: SqlBlobUuid = row.get(4)?;
+                    let sql_replica_uuid: SqlBlobUuid = row.get(5)?;
+                    let task_res = Task::from_parts(row.get(1)?, row.get(2)?, row.get(3)?, sql_task_uuid.uuid)
+                        .map_err(|e| format_err!("Invalid task was read from database row: {}", e));
+                    Ok(task_res.map(|task| {
+                        let op = USetOp::Add(task);
+                        let deliver_to = sql_replica_uuid.uuid;
+                        USetOpMsg { op, deliver_to }
+                    }))
                 }
                 else {
-                    let sql_task_uuid: SqlBlobUuid = row.get(4);
-                    let sql_replica_uuid: SqlBlobUuid = row.get(5);
+                    let sql_task_uuid: SqlBlobUuid = row.get(4)?;
+                    let sql_replica_uuid: SqlBlobUuid = row.get(5)?;
                     let op = USetOp::Remove(sql_task_uuid.uuid);
                     let deliver_to = sql_replica_uuid.uuid;
 
-                    Ok(USetOpMsg {op, deliver_to})
+                    Ok(Ok(USetOpMsg {op, deliver_to}))
                 }
              })
             .map_err(|e| format_err!("Error executing current task query: {}", e))?;
@@ -356,8 +355,8 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
         let mut msgs = Vec::new();
         // There are three kinds of errors that can occur:
         // The executing the query can error (eg syntax error)
-        // Deserializing a row can error (internal error? like there's a null byte in a text column or something?)
-        // Task::from_parts can error (eg priority=0) (this is why the actual value returned by the query map is a Result)
+        // Deserializing a row can error (internal error, like there's a null byte in a text column or something)
+        // Task::from_parts can error (eg priority=0) (this is the final msg_result)
         for row_res in rows {
             let msg_result = row_res.map_err(|e| format_err!("Error deserializing msg row from unsynced_ops table: {}", e))?;
             msgs.push(msg_result?);
@@ -426,8 +425,8 @@ impl<'conn> DBBackend for SqliteTransaction<'conn> {
             .map_err(|e| format_err!("Error preparing fetch replicas query: {}", e))?;
 
         let rows = stmt.query_map(NO_PARAMS, |row| {
-            let sql_uuid: SqlBlobUuid = row.get(0);
-            (sql_uuid.uuid, row.get(1))
+            let sql_uuid: SqlBlobUuid = row.get(0)?;
+            Ok((sql_uuid.uuid, row.get(1)?))
         })
         .map_err(|e| format_err!("Error fetching replicas from database: {}", e))?;
 

@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use failure::Error;
 use rusqlite::NO_PARAMS;
 use rusqlite::types::{FromSql, FromSqlResult, FromSqlError, ValueRef};
+use rusqlite::Result as SQLResult;
 use uuid::Uuid;
 
 use crate::db::SqliteTransaction;
@@ -100,16 +101,21 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(NO_PARAMS, |row| {
-                let rowid = RowId { id: row.get(0), _transaction: PhantomData };
-                let sql_uuid: SqlBlobUuid = row.get(4);
-                let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_uuid.uuid);
-                (rowid, task)
+                let row_id = RowId { id: row.get(0)?, _transaction: PhantomData };
+                let task_text = row.get(1)?;
+                let task_priority = row.get(2)?;
+                let task_reward = row.get(3)?;
+                let sql_uuid: SqlBlobUuid = row.get(4)?;
+
+                Ok((row_id, task_text, task_priority, task_reward, sql_uuid.uuid))
              })
             .map_err(|e| format_err!("Error executing task list query: {}", e))?;
 
         for row_res in rows {
-            let (id, task_res) = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
+            let (id, task_text, task_priority, task_reward, uuid) = 
+                row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            let task = Task::from_parts(task_text, task_priority, task_reward, uuid)
+                .map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
             tasks.push((id, task));
         }
         Ok(tasks)
@@ -129,16 +135,21 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             ")
             .map_err(|e| format_err!("Error preparing task list query: {}", e))?;
         let rows = stmt.query_map(NO_PARAMS, |row| {
-                let rowid = RowId { id: row.get(0), _transaction: PhantomData };
-                let sql_uuid: SqlBlobUuid = row.get(4);
-                let task = Task::from_parts(row.get(1), row.get(2), row.get(3), sql_uuid.uuid);
-                (rowid, task)
+                let row_id = RowId { id: row.get(0)?, _transaction: PhantomData };
+                let task_text = row.get(1)?;
+                let task_priority = row.get(2)?;
+                let task_reward = row.get(3)?;
+                let sql_uuid: SqlBlobUuid = row.get(4)?;
+
+                Ok((row_id, task_text, task_priority, task_reward, sql_uuid.uuid))
              })
             .map_err(|e| format_err!("Error executing task list query: {}", e))?;
 
         for row_res in rows {
-            let (id, task_res) = row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
-            let task = task_res.map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
+            let (id, task_text, task_priority, task_reward, uuid) = 
+                row_res.map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            let task = Task::from_parts(task_text, task_priority, task_reward, uuid)
+                .map_err(|e| format_err!("Invalid task read from database row: {}", e))?;
             tasks.push((id, task));
         }
         Ok(tasks)
@@ -174,15 +185,16 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             )")
             .map_err(|e| format_err!("Error preparing pop current task query: {}", e))?;
 
-        let rows: Vec<Result<(RowId, Task), Error>> = stmt.query_map(NO_PARAMS, |row| {
-                let sql_uuid: SqlBlobUuid = row.get(4);
-                Ok((RowId { id: row.get(0), _transaction: PhantomData },
-                Task::from_parts(row.get(1), row.get(2), row.get(3), sql_uuid.uuid)
-                    .map_err(|e| format_err!("Invalid task was read from database row: {}", e))?
-                ))
+        let rows: Vec<SQLResult<(RowId, String, u32, bool, Uuid)>> = stmt.query_map(NO_PARAMS, |row| {
+                let row_id = RowId { id: row.get(0)?, _transaction: PhantomData };
+                let task_text = row.get(1)?;
+                let task_priority = row.get(2)?;
+                let task_reward = row.get(3)?;
+                let sql_uuid: SqlBlobUuid = row.get(4)?;
+
+                Ok((row_id, task_text, task_priority, task_reward, sql_uuid.uuid))
              })
             .map_err(|e| format_err!("Error executing pop current task query: {}", e))?
-            .flat_map(|r| r)
             .collect();
 
         // no rows -> no current task, return None
@@ -193,9 +205,11 @@ impl<'conn> DBTransaction for SqliteTransaction<'conn> {
             return Err(format_err!("Multiple tasks selected in pop current task query. {} tasks, selected {:?}", rows.len(), rows))
         }
 
-        let current_rowid_task = rows.into_iter().next()
+        let current_rowid_task: (RowId, Task) = rows.into_iter().next()
             .expect("No rows even though we checked there was one")
-            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?;
+            .map(|t| Ok((t.0, Task::from_parts(t.1, t.2, t.3, t.4)?)))
+            .map_err(|e| format_err!("Error deserializing task row from database: {}", e))?
+            .map_err(|e: Error| format_err!("Invalid task was read from database row: {}", e))?;
 
         let rows_modified = tx.execute(
             "DELETE FROM current

@@ -54,6 +54,10 @@ Maybe Someday Features:
 
 Internal Refactoring:
 
+- clean up/refactor task deserialization that was caused by rusqlite 0.17/0.18 requiring query_map to return a rusqlite::Result
+	- in particular the double .map_errs in fetch_current_task and pop_current_task are ugly because we can't flat_map the rusqlite::Result
+	- actually, maybe we can flat_map the rusqlite::result into a Result<T, failure::Error> somehow
+
 - make all methods on DBBackend take a &mut self and use savepoints (https://docs.rs/rusqlite/0.18.0/rusqlite/struct.Transaction.html#method.savepoint) everywhere that does an insert but could fail. I think it might actually only be store_replica_server though, which already does that.
 
 - get rid of DBTransaction trait, just implement everything on the SqliteTransaction wrapper struct
