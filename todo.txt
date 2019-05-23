@@ -3,6 +3,7 @@ current todo:
 		- Test that serve subcommand runs without error on default port
 		- Test that server is actually responding to requests
 		- maybe add a /health endpoint and implement testing on that first
+		- Add header to all requests with X-Tkzr-Version and check that client/server versions match
 	- actually sync over network via crdt ops
 		- Add in sync_client function to end of subcommand processing if command is not serve
 
@@ -14,6 +15,11 @@ all under current todo
 Maybe Someday Features:
 - add top-level --config option, pass into `Config::new_in`
 - add top-level --top option, pass into current, complete, skip commands
+
+- garbage collection on long-unsynced clients
+ 	- if the unsynced ops for a given client exceeds the number of current tasks, add a tag to the response to a sync and say "this is all of the current tasks" or something.
+		- have to run the client's operations first (specifically removes)
+	- obviously complicates the protocol and crdt operations
 
 *- Add user auth struct to parameters for db.
 	- on local db it should be like 0 or whatever

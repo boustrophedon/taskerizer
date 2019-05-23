@@ -644,3 +644,18 @@ I think for now everything works well enough that I should just stop working on 
 I might also be able to do something where I make a generic DBBackend struct but also keep the trait so that I can do a default implementation on the trait for the trait members that only use DBTransaction methods but aren't passthrough methods
 
 ---
+
+sync notes:
+
+so the version of a USet i'm implementing requires that the network is reliable and has exactly-once delivery semantics. but http doesn't tell you if your response was delivered (as the server), so we don't know if, upon sync, the client has gotten all of the USetOps that we sent it. i.e., if the response doesn't get to the client, the server doesn't know whether to resend them or not upon the next sync, so we don't know whether to delete them after the sync.
+
+the solution i'm going with is to have a separate "clear" endpoint which clears all pending messages. this is a tradeoff: if another client syncs in between client 1's sync and clear requests, client 1 will lose those messages. we could go with a fancier solution by adding a message counter/vector clock/timestamp to each USetOpMsg, but that has other complications in a multi-server situation. if i were to try and fix this, that's the solution i would go for. however, because the situation is very unlikely for a todo list (as opposed to e.g. a collaborative document editor) it's a tradeoff i'm more than happy to take.
+
+
+additionally, I have to rework the `apply_all_uset_ops` function in the `sync` module because it consumes the transaction. if, in `sync::server::process_sync` applying the uset ops succeeds but then for whatever reason any of the following operations fails (fetching replicas and fetching messages, or storing a new replica and fetching all tasks) then the client gets a 500, so it doesn't know whether it should resend its pending operations to the server or not. we could fix this by adding a return code/error type with the 500 message's body to indicate whether the server successfully processed the incoming messages, but that's somewhat fragile. it's better to just redo the operation.
+
+---
+
+notes on db migrations:
+
+use `make_test_db` + environment variable and run migration before tests
