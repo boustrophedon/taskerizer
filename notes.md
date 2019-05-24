@@ -658,4 +658,18 @@ additionally, I have to rework the `apply_all_uset_ops` function in the `sync` m
 
 notes on db migrations:
 
-use `make_test_db` + environment variable and run migration before tests
+use `open_test_db` + environment variable and run migration before tests
+
+uh i had other notes idk where they went.
+
+---
+
+i'm also missing some notes on the uset operations.
+
+basically it was: if I just have the sync operation and no clear, and both sides automatically clear, messages can be lost if the client fails to process some messages (eg version mismatch or something) or if the connection is dropped after the client sends its messages and before the server response is recieved. i.e. with most web/http frameworks, you get a request and return a response and nothing happens after that (the spec for http/1.1 allows for more stuff i.e. persistent connections but typically that's not exposed in apis and is only for optimization purposes)
+
+second option: sync + clear, but now the problem is that if replica 2 syncs between replica's 1 sync and clear, replica 1 misses replica 2's messages. this is not really a problem for my particular use case: if you have a personal todo-list, typically you're the only one updating it. i.e. only one client/replica is active/online at a time. 
+
+third option: sync + clear + method to keep track of last sync per-message. in this way, we can keep transactions open between sync and clear, or mark messages as "seen" and then clear will only clear the "seen" messages for that client. this would be the correct way to do it if this were a multi-user database i.e. if multiple clients were expected to be active at a time. it's probably similar to MVCC but I don't know that much about MVCC.
+
+both of these still have problems where if the network is unreliable i think some messages can get lost, but i'm not sure.
