@@ -45,7 +45,7 @@ pub fn example_task_3() -> Task {
 
 pub fn example_task_break_1() -> Task {
     Task {
-        task: "another tesk task with break set".to_string(),
+        task: "another test task with break set".to_string(),
         priority: 1,
         reward: true,
         uuid: Uuid::from_bytes([0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0]),
@@ -64,8 +64,8 @@ pub fn example_task_break_2() -> Task {
 pub fn example_task_list() -> Vec<Task> {
     vec![
         example_task_1(),
-        example_task_break_1(),
         example_task_2(),
+        example_task_break_1(),
         example_task_break_2(),
     ]
 }
