@@ -6,6 +6,8 @@ use uuid::Uuid;
 
 pub type ReplicaUuid = Uuid;
 
+mod server;
+
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

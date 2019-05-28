@@ -1,5 +1,7 @@
 current todo:
 	- Testing harness for setting up servers/clients, doing operations, and syncing.
+		- server::process_clear
+
 		- Test that serve subcommand runs without error on default port
 		- Test that server is actually responding to requests
 		- maybe add a /health endpoint and implement testing on that first
