@@ -90,3 +90,15 @@ pub fn process_sync(tx: &mut impl DBBackend, incoming_replica: ReplicaUuid, inco
 
     return Ok(results);
 }
+
+/// Process an incoming clear operation.
+///
+/// This will clear all `USetOpMsg`s in the database for the given replica with UUid `incoming_replica`.
+///
+/// Note that we do not keep track of which operations were successfully synced - if replica A
+/// syncs, and then replica B syncs before replica A clears again, any operations from B that A
+/// would have recieved by syncing will be cleared. See `notes.md` for more information.
+pub fn process_clear(tx: &mut impl DBBackend, incoming_replica: ReplicaUuid) -> Result<(), Error> {
+    tx.clear_uset_op_msgs(&incoming_replica)
+        .map_err(|e| format_err!("Error processing clear with replica {}: {}", incoming_replica, e))
+}
