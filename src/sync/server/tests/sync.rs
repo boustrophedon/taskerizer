@@ -52,6 +52,47 @@ fn test_server_process_sync_empty_send_ops() {
     assert!(resp_ops.is_empty(), "Ops in response after syncing twice with no operations in between: {:?}", resp_ops);
 }
 
+// FIXME: the fact that these are two separate tests means we should do some refactoring.
+
+#[test]
+/// On initial sync, send same task/operation twice and check we get an error
+fn test_server_process_sync_error_on_duplicate_initial() {
+    let mut db = open_test_db();
+    let mut tx = db.transaction().expect("Failed to open transaction");
+
+    let replica = example_replica_1();
+    let ops = vec![example_add_uset_op_1(), example_add_uset_op_1()];
+
+    // try to process same op twice, fail
+    let res = process_sync(&mut tx, replica, &ops);
+    assert!(res.is_err(), "No error when processing same operation twice: {:?}", res.unwrap());
+
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("Failed to apply incoming operations"), "Error message was incorrect: {}", err);
+    assert!(err.to_string().contains("UNIQUE constraint failed: tasks.uuid"), "Error message was incorrect: {}", err);
+}
+
+#[test]
+/// With registered client, send same task/operation twice and check we get an error
+fn test_server_process_sync_error_on_duplicate_registered() {
+    let mut db = open_test_db();
+    let mut tx = db.transaction().expect("Failed to open transaction");
+
+    let replica = example_replica_1();
+    let ops = vec![example_add_uset_op_1()];
+
+    // initial sync
+    process_sync(&mut tx, replica, &ops).expect("Failed to sync replica with initial op");
+
+    // try to process same op again, fail
+    let res = process_sync(&mut tx, replica, &ops);
+    assert!(res.is_err(), "No error when processing same operation twice: {:?}", res.unwrap());
+
+    let err = res.unwrap_err();
+    assert!(err.to_string().contains("Failed to apply incoming operations"), "Error message was incorrect: {}", err);
+    assert!(err.to_string().contains("UNIQUE constraint failed: tasks.uuid"), "Error message was incorrect: {}", err);
+}
+
 #[test]
 /// Add task with one client, then sync with another client and make sure we get same op back.
 fn test_server_process_sync_two_clients_1() {
