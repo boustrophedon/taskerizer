@@ -2,7 +2,7 @@ use crate::db::DBBackend;
 use crate::db::tests::open_test_db;
 
 use crate::sync::USetOp;
-use crate::sync::server::{process_clear, process_sync};
+use crate::sync::process::{process_clear, process_sync};
 
 use crate::sync::test_utils::{example_replica_1, example_replica_2, example_replica_3};
 use crate::sync::test_utils::{example_add_uset_op_1, example_add_uset_op_2};
@@ -16,7 +16,7 @@ use pretty_assertions::assert_eq;
 
 #[test]
 /// Clear on empty database, check result is Ok
-fn test_server_process_clear_empty() {
+fn test_process_clear_empty() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -28,7 +28,7 @@ fn test_server_process_clear_empty() {
 
 #[test]
 /// Clear on unknown replica id, check result is Ok.
-fn test_server_process_clear_unknown_id() {
+fn test_process_clear_unknown_id() {
     let mut db = open_test_db();
     let mut tx = db.transaction().unwrap();
 
@@ -40,7 +40,7 @@ fn test_server_process_clear_unknown_id() {
 
 #[test]
 /// Clear on new replica, check result is Ok
-fn test_server_process_clear_no_tasks() {
+fn test_process_clear_no_tasks() {
     let mut db = open_test_db();
     let mut tx = db.transaction().unwrap();
 
@@ -55,7 +55,7 @@ fn test_server_process_clear_no_tasks() {
 /// Check that clear preserves tasks in database.
 /// sync replica with new task, clear, sync again and check nothing is returned but the task is
 /// still in the database.
-fn test_server_process_clear_preserve_database() {
+fn test_process_clear_preserve_database() {
     let mut db = open_test_db();
     let mut tx = db.transaction().unwrap();
 
@@ -78,7 +78,7 @@ fn test_server_process_clear_preserve_database() {
 /// Check that clear actually clears unsynced tasks.
 /// Register replica 1, sync with replica 2, sync with replica 1 and check we get expected tasks,
 /// clear replica 1, sync again and check we get no tasks.
-fn test_server_process_clear_actually_clears() {
+fn test_process_clear_actually_clears() {
     let mut db = open_test_db();
     let mut tx = db.transaction().unwrap();
 
@@ -102,7 +102,7 @@ fn test_server_process_clear_actually_clears() {
 #[test]
 /// Check that clearing for an arbitrary replica, registered or not, does not clear existing tasks
 /// in the database.
-fn test_server_process_clear_existing_task() {
+fn test_process_clear_existing_task() {
     let mut db = open_test_db();
     let mut tx = db.transaction().unwrap();
 
@@ -137,7 +137,7 @@ fn test_server_process_clear_existing_task() {
 #[test]
 /// Register 3 clients, send a task from 1, then clear from 2 and upon sync check we don't have anything for
 /// 2, but when syncing without clearing there is a task for 3.
-fn test_server_process_clear_three_clients_clear_vs_no_clear() {
+fn test_process_clear_three_clients_clear_vs_no_clear() {
     let mut db = open_test_db();
     let mut tx = db.transaction().unwrap();
 

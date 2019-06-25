@@ -2,7 +2,7 @@ use crate::db::DBBackend;
 use crate::db::tests::open_test_db;
 
 use crate::sync::USetOp;
-use crate::sync::server::process_sync;
+use crate::sync::process::process_sync;
 
 use crate::sync::test_utils::{example_replica_1, example_replica_2, example_replica_3};
 use crate::sync::test_utils::{example_add_uset_op_1, example_add_uset_op_2, example_remove_uset_op_1};
@@ -14,7 +14,7 @@ use pretty_assertions::assert_eq;
 
 #[test]
 /// If incoming replica is not in database, send nothing if no tasks are in database.
-fn test_server_process_sync_empty() {
+fn test_process_sync_empty() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -30,7 +30,7 @@ fn test_server_process_sync_empty() {
 #[test]
 /// If incoming replica is not in database, recieve ops, send nothing in response if no tasks are
 /// in database, and then send nothing again if we try to sync again.
-fn test_server_process_sync_empty_send_ops() {
+fn test_process_sync_empty_send_ops() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -56,7 +56,7 @@ fn test_server_process_sync_empty_send_ops() {
 
 #[test]
 /// On initial sync, send same task/operation twice and check we get an error
-fn test_server_process_sync_error_on_duplicate_initial() {
+fn test_process_sync_error_on_duplicate_initial() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -74,7 +74,7 @@ fn test_server_process_sync_error_on_duplicate_initial() {
 
 #[test]
 /// With registered client, send same task/operation twice and check we get an error
-fn test_server_process_sync_error_on_duplicate_registered() {
+fn test_process_sync_error_on_duplicate_registered() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -95,7 +95,7 @@ fn test_server_process_sync_error_on_duplicate_registered() {
 
 #[test]
 /// Add task with one client, then sync with another client and make sure we get same op back.
-fn test_server_process_sync_two_clients_1() {
+fn test_process_sync_two_clients_1() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -122,7 +122,7 @@ fn test_server_process_sync_two_clients_1() {
 #[test]
 /// Add tasks with one client, then sync with another client and make sure we get all tasks upon
 /// first sync.
-fn test_server_process_sync_two_clients_2() {
+fn test_process_sync_two_clients_2() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -150,7 +150,7 @@ fn test_server_process_sync_two_clients_2() {
 #[test]
 /// Add tasks with one client, then sync with another client and make sure we get those ops upon
 /// first sync and they are still there upon second sync, because we did not clear them.
-fn test_server_process_sync_two_clients_3() {
+fn test_process_sync_two_clients_3() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -184,7 +184,7 @@ fn test_server_process_sync_two_clients_3() {
 #[test]
 /// Add tasks manually, sync new client, do not clear, sync again and check we still get back all
 /// tasks.
-fn test_server_process_sync_new_client_no_clear() {
+fn test_process_sync_new_client_no_clear() {
     let mut db = open_test_db();
     let mut tx = db.transaction().expect("Failed to open transaction");
 
@@ -219,7 +219,7 @@ proptest! {
     #[test]
     /// Add tasks via client 1, add tasks via sync client 2, add tasks via sync client 3, check that
     /// responses contain expected tasks.
-    fn test_server_process_sync_three_clients_arb(
+    fn test_process_sync_three_clients_arb(
             ops1 in uset_add_list_arb(), ops2 in uset_add_list_arb(), ops3 in uset_add_list_arb()) {
 
         let mut db = open_test_db();
@@ -293,7 +293,7 @@ proptest! {
     #[test]
     /// Make two databases, and process sync over a list of message two ways: all at once and one
     /// at a time. Check that they give the same result when syncing with a new client.
-    fn test_server_process_sync_one_client_add_two_ways_arb(ops in uset_add_list_arb()) {
+    fn test_process_sync_one_client_add_two_ways_arb(ops in uset_add_list_arb()) {
         let mut db1 = open_test_db();
         let mut db2 = open_test_db();
 
@@ -349,7 +349,7 @@ proptest! {
     /// Make a database, and process_sync over a list of adds and then a list of removes in two
     /// ways: one at a time and all at once, and check that both databases are empty upon sync with
     /// a new replica.
-    fn test_server_process_sync_one_client_add_remove_two_ways_arb(ops in uset_add_list_arb()) {
+    fn test_process_sync_one_client_add_remove_two_ways_arb(ops in uset_add_list_arb()) {
         let mut db1 = open_test_db();
         let mut db2 = open_test_db();
 
